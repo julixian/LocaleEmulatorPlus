@@ -2,7 +2,7 @@
 
 <Strings>
   <RunDefault>เปิดด้วยโปรไฟล์แอป</RunDefault>
-  <Submenu>Locale Emulator</Submenu>
+  <Submenu>LocaleEmulatorPlus</Submenu>
   <ManageApp>แก้ไขโปรไฟล์แอป</ManageApp>
   <ManageAll>แก้ไขโปรไฟล์โดยรวม</ManageAll>
 </Strings>

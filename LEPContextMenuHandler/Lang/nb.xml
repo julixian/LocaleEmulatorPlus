@@ -2,7 +2,7 @@
 
 <Strings>
   <RunDefault>Kjør med programmets profil</RunDefault>
-  <Submenu>Locale Emulator</Submenu>
+  <Submenu>LocaleEmulatorPlus</Submenu>
   <ManageApp>Endre på programprofilen</ManageApp>
   <ManageAll>Rediger den generelle profillisten</ManageAll>
 </Strings>

@@ -2,7 +2,7 @@
 
 <Strings>
   <RunDefault>Jalankan dengan Profil Aplikasi</RunDefault>
-  <Submenu>Locale Emulator</Submenu>
+  <Submenu>LocaleEmulatorPlus</Submenu>
   <ManageApp>Ubah Profil Aplikasi</ManageApp>
   <ManageAll>Ubah daftar profil global</ManageAll>
 </Strings>

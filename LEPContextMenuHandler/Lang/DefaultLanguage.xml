@@ -2,7 +2,7 @@
 
 <Strings>
   <RunDefault>Run with Application Profile</RunDefault>
-  <Submenu>Locale Emulator</Submenu>
+  <Submenu>LocaleEmulatorPlus</Submenu>
   <ManageApp>Modify Application Profile</ManageApp>
   <ManageAll>Edit Global Profile List</ManageAll>
 </Strings>

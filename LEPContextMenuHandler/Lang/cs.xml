@@ -2,7 +2,7 @@
 
 <Strings>
   <RunDefault>Spustit s profilem aplikace</RunDefault>
-  <Submenu>Locale Emulator</Submenu>
+  <Submenu>LocaleEmulatorPlus</Submenu>
   <ManageApp>Změnit profil aplikace</ManageApp>
   <ManageAll>Upravit seznam globálních profilů</ManageAll>
 </Strings>

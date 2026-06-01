@@ -2,7 +2,7 @@
 
 <Strings>
   <RunDefault>Ejecutar con el Perfil de la Aplicación</RunDefault>
-  <Submenu>Locale Emulator</Submenu>
+  <Submenu>LocaleEmulatorPlus</Submenu>
   <ManageApp>Modificar el Perfil de la Aplicación</ManageApp>
   <ManageAll>Editar la lista de Perfiles Globales</ManageAll>
 </Strings>

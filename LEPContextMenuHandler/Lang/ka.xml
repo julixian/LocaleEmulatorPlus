@@ -2,7 +2,7 @@
 
 <Strings>
   <RunDefault>აპლიკაციის პროფილით გაშვება</RunDefault>
-  <Submenu>ლოკალის ემულატორი</Submenu>
+  <Submenu>LocaleEmulatorPlus</Submenu>
   <ManageApp>აპლიკაციის პროფილის ცვლილება</ManageApp>
   <ManageAll>პროფილების საერთო სიის შეცვლა</ManageAll>
 </Strings>
