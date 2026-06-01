@@ -61,6 +61,14 @@ core checkout:
 Set `CORE_DIR` to another `LocaleEmulatorPlus-Core` checkout or prepared core output root when
 needed. See the Core repository documentation for native core build details.
 
+## Runtime
+
+The GUI, installer, launcher, and Explorer context-menu handler target .NET Framework 4.8.
+On Windows 7/8/8.1, install the .NET Framework 4.8 Runtime before using LEP, otherwise the
+Explorer context menu may fail to appear or load correctly:
+
+https://dotnet.microsoft.com/zh-cn/download/dotnet-framework/net48
+
 ## Build
 
 Requirements:

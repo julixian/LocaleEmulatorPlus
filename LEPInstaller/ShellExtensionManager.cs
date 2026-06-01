@@ -1,25 +1,28 @@
 using Microsoft.Win32;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace LEPInstaller
 {
     class ShellExtensionManager
     {
-        private static string clsid = "{C52B9871-E5E9-41FD-B84D-C5ACADBEC7AE}";
-        private static string fileType = "*";
-        private static string friendlyName = "LocaleEmulatorPlus.LEPContextMenuHandler Class";
-        private static string keyName = $@"Software\Classes\{fileType}\shellex\ContextMenuHandlers\{clsid}";
+        private const string Clsid = "{517F67EF-8967-4E4F-9713-B60ED2E9288A}";
+        private const string FileType = "*";
+        private const string FriendlyName = "LocaleEmulatorPlus.LEPContextMenuHandler Class";
+        private const string ApprovedKeyName = @"Software\Microsoft\Windows\CurrentVersion\Shell Extensions\Approved";
+        private static string KeyName => $@"Software\Classes\{FileType}\shellex\ContextMenuHandlers\{Clsid}";
 
         public static void RegisterShellExtContextMenuHandler(bool allUsers)
         {
             var rootName = allUsers ? Registry.LocalMachine : Registry.CurrentUser;
 
-            using (var key = rootName.CreateSubKey(keyName))
+            using (var key = rootName.CreateSubKey(KeyName))
             {
-                key?.SetValue(null, friendlyName);
+                key?.SetValue(null, FriendlyName);
+            }
+
+            using (var key = rootName.CreateSubKey(ApprovedKeyName))
+            {
+                key?.SetValue(Clsid, FriendlyName);
             }
         }
 
@@ -27,14 +30,33 @@ namespace LEPInstaller
         {
             var rootName = allUsers ? Registry.LocalMachine : Registry.CurrentUser;
 
-            rootName.DeleteSubKeyTree(keyName);
+            DeleteSubKeyTreeIfExists(rootName, KeyName);
+
+            using (var key = rootName.OpenSubKey(ApprovedKeyName, true))
+            {
+                key?.DeleteValue(Clsid, false);
+            }
         }
 
         public static bool IsInstalled(bool allUsers)
         {
             var rootName = allUsers ? Registry.LocalMachine : Registry.CurrentUser;
 
-            return rootName.OpenSubKey(keyName, false) != null;
+            using (var key = rootName.OpenSubKey(KeyName, false))
+            {
+                return key != null;
+            }
+        }
+
+        private static void DeleteSubKeyTreeIfExists(RegistryKey rootName, string keyName)
+        {
+            try
+            {
+                rootName.DeleteSubKeyTree(keyName);
+            }
+            catch (ArgumentException)
+            {
+            }
         }
     }
 }

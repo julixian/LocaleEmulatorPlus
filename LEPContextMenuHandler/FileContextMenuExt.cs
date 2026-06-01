@@ -34,7 +34,7 @@ using IDataObject = System.Runtime.InteropServices.ComTypes.IDataObject;
 namespace LEPContextMenuHandler
 {
     [ClassInterface(ClassInterfaceType.None)]
-    [Guid("C52B9871-E5E9-41FD-B84D-C5ACADBEC7AE"), ComVisible(true)]
+    [Guid("517F67EF-8967-4E4F-9713-B60ED2E9288A"), ComVisible(true)]
     public class FileContextMenuExt : IShellExtInit, IContextMenu
     {
         // The name of the selected file.
