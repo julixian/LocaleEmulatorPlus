@@ -115,3 +115,7 @@ Build\Release
 ## 许可证
 
 本分支继承自 Locale Emulator。原始上游许可证说明和第三方来源请见 `README_ORG.md`。
+
+## 乞讨
+从原分支那里继承修复并扩展这份屎山代码消耗了我大量的精力（和token orz），如果你愿意大发慈悲帮我回点血，
+请前往 https://julixian-siw.worldsystem.net/ 对我进行一波金钱施舍。
