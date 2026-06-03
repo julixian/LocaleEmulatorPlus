@@ -27,7 +27,8 @@ can evolve independently without pretending to be an official upstream release.
 
 The original Locale Emulator release is x86-focused and tied to an old build environment. This
 fork keeps the user-facing workflow while making the codebase buildable with a modern local
-toolchain and adding x64 launch support, but drops Windows XP support.
+toolchain, adding x64 launch support, and fixing several inherited LE bugs, but drops Windows XP
+support.
 
 The main changes are:
 

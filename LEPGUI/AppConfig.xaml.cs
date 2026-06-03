@@ -88,7 +88,7 @@ namespace LEPGUI
 
                 var file = (IPersistFile)link;
                 file.Save(
-                          Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+                          Path.Combine(Path.GetDirectoryName(path),
                                        Path.GetFileNameWithoutExtension(path) + ".lnk"),
                           false);
             }
