@@ -118,5 +118,6 @@ Build\Release
 
 ## 乞讨
 从原分支那里继承修复并扩展这份屎山代码消耗了我大量的精力（和token orz），如果你愿意大发慈悲帮我回点血，
-我可以艾特[某位大神](https://github.com/SuQiandYing)或者它的星怒们给你们免费卖屁股() 
+我可以艾特[某位大神](https://github.com/SuQiandYing)或者它的星怒们给你们免费卖屁股()
+
 ![donate](https://github.com/user-attachments/assets/c1052298-8027-478a-a560-325f4560ea1f)。
