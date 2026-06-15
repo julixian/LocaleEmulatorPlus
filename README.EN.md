@@ -18,6 +18,10 @@ support.
 
 ![](img/menu_example.png?raw=true)
 
+PS: 在 Windows on arm 设备上转区 x86 程序需要为 `LEPProc_x86.exe` 和要转区的x86程序开启 `禁用混合执行模式`
+
+![](img/Disable_Mixed_Execution_Mode.png?raw=true)
+
 The main changes are:
 
 - separate `LoaderDll_x86.dll` / `LoaderDll_x64.dll` and
