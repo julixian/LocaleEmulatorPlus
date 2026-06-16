@@ -47,7 +47,7 @@ namespace LEPCommonLibrary
                                                    p.Element("Timezone").Value,
                                                    bool.Parse(p.TryGetValue("RunAsAdmin", "false")),
                                                    bool.Parse(p.TryGetValue("RedirectRegistry", "true")),
-                                                   bool.Parse(p.TryGetValue("IsAdvancedRedirection", "false")),
+                                                   bool.Parse(p.TryGetValue("IsAdvancedRedirection", "true")),
                                                    bool.Parse(p.TryGetValue("RunWithSuspend", "false"))
                                          )
                         ).ToArray();
@@ -90,7 +90,7 @@ namespace LEPCommonLibrary
                                                     "Tokyo Standard Time",
                                                     false,
                                                     true,
-                                                    false,
+                                                    true,
                                                     false
                                           ),
                                       new LEPProfile("Run in Japanese (Admin)",
@@ -101,7 +101,7 @@ namespace LEPCommonLibrary
                                                     "Tokyo Standard Time",
                                                     true,
                                                     true,
-                                                    false,
+                                                    true,
                                                     false
                                           )
                                   };

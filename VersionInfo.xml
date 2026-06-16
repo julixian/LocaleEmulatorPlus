@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <VersionInfo>
-  <Version>1.0.0.0</Version>
-  <Date>20260604</Date>
+  <Version>1.1.0.0</Version>
+  <Date>20260617</Date>
   <Url>https://github.com/julixian/LocaleEmulatorPlus/releases</Url>
-  <Note>Initial Locale Emulator Plus release.</Note>
+  <Note>Locale Emulator Plus 1.1 release.</Note>
 </VersionInfo>
