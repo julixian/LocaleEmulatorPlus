@@ -75,7 +75,7 @@
                                       VerticalAlignment="Center" IsChecked="True" />
                             <CheckBox x:Name="cbIsAdvancedRedirection" Grid.Row="2"
                                       Content="{DynamicResource IsAdvancedRedirection}" Margin="5,0,0,0"
-                                      VerticalAlignment="Center" IsChecked="false" />
+                                      VerticalAlignment="Center" IsChecked="True" />
                             <CheckBox x:Name="cbStartAsSuspend" Grid.Row="3"
                                       Content="{DynamicResource WithCREATESUSPENDED}" Margin="5,0,0,0"
                                       VerticalAlignment="Center" />

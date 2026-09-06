@@ -34,6 +34,7 @@ namespace LEPGUI
             _timezones = TimeZoneInfo.GetSystemTimeZones().ToList();
             cbTimezone.ItemsSource = _timezones.Select(t => t.DisplayName);
             cbTimezone.SelectedIndex = _timezones.FindIndex(tz => tz.Id == "Tokyo Standard Time");
+            cbIsAdvancedRedirection.IsChecked = true;
 
             // Load exists config.
             var configs = LEPConfig.GetProfiles(App.StandaloneFilePath);
