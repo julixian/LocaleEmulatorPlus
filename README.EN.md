@@ -133,3 +133,7 @@ copies the AnyCPU output into those architecture folders before building `LEPPro
 
 This fork inherits source from Locale Emulator. See `README_ORG.md` for the original upstream
 license notice and third-party attribution.
+
+## Buy me a coffee
+
+Paypal: [paypal.me/julixian](https://www.paypal.com/paypalme/julixian)

@@ -127,3 +127,5 @@ Build\Release
 我可以艾特[某位大神](https://github.com/SuQiandYing)或者它的星怒们给你们免费卖屁股()。
 
 ![donate](img/donate.png?raw=true)
+
+Paypal: [paypal.me/julixian](https://www.paypal.com/paypalme/julixian)
