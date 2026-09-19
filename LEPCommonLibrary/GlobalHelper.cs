@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -29,27 +30,32 @@ namespace LEPCommonLibrary
             }
         }
 
-        public static int GetLastUpdate()
+        public static DateTimeOffset? GetLastUpdate()
         {
             try
             {
                 var doc = XDocument.Load(GlobalVersionPath);
-
-                return int.Parse(doc.Descendants("LEPVersion").First().Attribute("LastUpdate").Value);
+                var value = doc.Descendants("LEPVersion").First().Attribute("LastUpdate").Value;
+                DateTimeOffset lastUpdate;
+                return DateTimeOffset.TryParseExact(value, "O", CultureInfo.InvariantCulture,
+                                                    DateTimeStyles.None, out lastUpdate)
+                           ? lastUpdate
+                           : (DateTimeOffset?)null;
             }
             catch
             {
-                return 0;
+                return null;
             }
         }
 
-        public static void SetLastUpdate(int date)
+        public static void SetLastUpdate(DateTimeOffset date)
         {
             try
             {
                 var doc = XDocument.Load(GlobalVersionPath);
 
-                doc.Descendants("LEPVersion").First().Attribute("LastUpdate").Value = date.ToString().PadLeft(8, '0');
+                doc.Descendants("LEPVersion").First().Attribute("LastUpdate").Value =
+                    date.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
 
                 doc.Save(GlobalVersionPath);
             }

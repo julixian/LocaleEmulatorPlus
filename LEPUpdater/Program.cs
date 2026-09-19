@@ -16,8 +16,12 @@ namespace LEPUpdater
         {
             auto = args.Length != 0;
 
-            // Check new version every week.
-            if (auto && int.Parse(DateTime.Now.ToString("yyyyMMdd")) - GlobalHelper.GetLastUpdate() < 7)
+            // Check for a new release at most once per hour when launched automatically.
+            var lastUpdate = GlobalHelper.GetLastUpdate();
+            var now = DateTimeOffset.UtcNow;
+            if (auto && lastUpdate.HasValue &&
+                now >= lastUpdate.Value &&
+                now - lastUpdate.Value < TimeSpan.FromHours(1))
             {
                 Environment.Exit(0);
             }
