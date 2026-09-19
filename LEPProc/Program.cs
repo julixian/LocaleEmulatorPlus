@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
 using LEPCommonLibrary;
@@ -21,6 +22,9 @@ namespace LEPProc
         private static void Main(string[] args)
         {
             SystemHelper.DisableDPIScale();
+
+            if (RestartWithShellParent(args))
+                return;
 
             try
             {
@@ -302,6 +306,111 @@ namespace LEPProc
             return true;
         }
 
+        private static bool RestartWithShellParent(string[] args)
+        {
+            if (SystemHelper.IsAdministrator())
+                return false;
+
+            var shellWindow = GetShellWindow();
+            if (shellWindow == IntPtr.Zero)
+                return false;
+
+            uint shellProcessId;
+            GetWindowThreadProcessId(shellWindow, out shellProcessId);
+            if (shellProcessId == 0 || GetParentProcessId() == shellProcessId)
+                return false;
+
+            var shellProcess = OpenProcess(PROCESS_CREATE_PROCESS, false, shellProcessId);
+            if (shellProcess == IntPtr.Zero)
+                return false;
+
+            IntPtr attributeList = IntPtr.Zero;
+            IntPtr parentProcessValue = IntPtr.Zero;
+            var attributeListInitialized = false;
+            try
+            {
+                var attributeListSize = IntPtr.Zero;
+                InitializeProcThreadAttributeList(IntPtr.Zero, 1, 0, ref attributeListSize);
+                if (attributeListSize == IntPtr.Zero)
+                    return false;
+
+                attributeList = Marshal.AllocHGlobal(attributeListSize);
+                if (!InitializeProcThreadAttributeList(attributeList, 1, 0, ref attributeListSize))
+                    return false;
+                attributeListInitialized = true;
+
+                parentProcessValue = Marshal.AllocHGlobal(IntPtr.Size);
+                Marshal.WriteIntPtr(parentProcessValue, shellProcess);
+                if (!UpdateProcThreadAttribute(
+                        attributeList,
+                        0,
+                        (IntPtr) PROC_THREAD_ATTRIBUTE_PARENT_PROCESS,
+                        parentProcessValue,
+                        (IntPtr) IntPtr.Size,
+                        IntPtr.Zero,
+                        IntPtr.Zero))
+                    return false;
+
+                var executablePath = Assembly.GetExecutingAssembly().Location;
+                var commandLine = new StringBuilder(QuoteArgument(executablePath));
+                if (args.Length != 0)
+                {
+                    commandLine.Append(' ');
+                    commandLine.Append(BuildCommandLine(args));
+                }
+
+                var startupInfo = new STARTUPINFOEX
+                {
+                    StartupInfo = {cb = Marshal.SizeOf(typeof(STARTUPINFOEX))},
+                    AttributeList = attributeList
+                };
+                PROCESS_INFORMATION_NATIVE processInformation;
+                if (!CreateProcess(
+                        executablePath,
+                        commandLine,
+                        IntPtr.Zero,
+                        IntPtr.Zero,
+                        false,
+                        EXTENDED_STARTUPINFO_PRESENT,
+                        IntPtr.Zero,
+                        null,
+                        ref startupInfo,
+                        out processInformation))
+                    return false;
+
+                CloseHandle(processInformation.Process);
+                CloseHandle(processInformation.Thread);
+                return true;
+            }
+            finally
+            {
+                if (attributeList != IntPtr.Zero)
+                {
+                    if (attributeListInitialized)
+                        DeleteProcThreadAttributeList(attributeList);
+                    Marshal.FreeHGlobal(attributeList);
+                }
+
+                if (parentProcessValue != IntPtr.Zero)
+                    Marshal.FreeHGlobal(parentProcessValue);
+
+                CloseHandle(shellProcess);
+            }
+        }
+
+        private static uint GetParentProcessId()
+        {
+            PROCESS_BASIC_INFORMATION processInformation;
+            int returnLength;
+            var status = NtQueryInformationProcess(
+                Process.GetCurrentProcess().Handle,
+                0,
+                out processInformation,
+                Marshal.SizeOf(typeof(PROCESS_BASIC_INFORMATION)),
+                out returnLength);
+            return status >= 0 ? (uint) processInformation.InheritedFromUniqueProcessId.ToInt64() : 0;
+        }
+
         private static string BuildCommandLine(string[] args)
         {
             return string.Join(" ", args.Select(QuoteArgument));
@@ -414,5 +523,112 @@ namespace LEPProc
 
             return charset;
         }
+
+        private const uint PROCESS_CREATE_PROCESS = 0x0080;
+        private const uint EXTENDED_STARTUPINFO_PRESENT = 0x00080000;
+        private const long PROC_THREAD_ATTRIBUTE_PARENT_PROCESS = 0x00020000;
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct PROCESS_BASIC_INFORMATION
+        {
+            internal IntPtr Reserved1;
+            internal IntPtr PebBaseAddress;
+            internal IntPtr Reserved2_0;
+            internal IntPtr Reserved2_1;
+            internal IntPtr UniqueProcessId;
+            internal IntPtr InheritedFromUniqueProcessId;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct STARTUPINFO_NATIVE
+        {
+            internal int cb;
+            internal IntPtr Reserved;
+            internal IntPtr Desktop;
+            internal IntPtr Title;
+            internal uint X;
+            internal uint Y;
+            internal uint XSize;
+            internal uint YSize;
+            internal uint XCountChars;
+            internal uint YCountChars;
+            internal uint FillAttribute;
+            internal uint Flags;
+            internal ushort ShowWindow;
+            internal ushort Reserved2Size;
+            internal IntPtr Reserved2;
+            internal IntPtr StandardInput;
+            internal IntPtr StandardOutput;
+            internal IntPtr StandardError;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct STARTUPINFOEX
+        {
+            internal STARTUPINFO_NATIVE StartupInfo;
+            internal IntPtr AttributeList;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct PROCESS_INFORMATION_NATIVE
+        {
+            internal IntPtr Process;
+            internal IntPtr Thread;
+            internal uint ProcessId;
+            internal uint ThreadId;
+        }
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetShellWindow();
+
+        [DllImport("user32.dll")]
+        private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr OpenProcess(uint desiredAccess, bool inheritHandle, uint processId);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool InitializeProcThreadAttributeList(
+            IntPtr attributeList,
+            int attributeCount,
+            int flags,
+            ref IntPtr size);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool UpdateProcThreadAttribute(
+            IntPtr attributeList,
+            uint flags,
+            IntPtr attribute,
+            IntPtr value,
+            IntPtr size,
+            IntPtr previousValue,
+            IntPtr returnSize);
+
+        [DllImport("kernel32.dll")]
+        private static extern void DeleteProcThreadAttributeList(IntPtr attributeList);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern bool CreateProcess(
+            string applicationName,
+            StringBuilder commandLine,
+            IntPtr processAttributes,
+            IntPtr threadAttributes,
+            bool inheritHandles,
+            uint creationFlags,
+            IntPtr environment,
+            string currentDirectory,
+            ref STARTUPINFOEX startupInfo,
+            out PROCESS_INFORMATION_NATIVE processInformation);
+
+        [DllImport("kernel32.dll")]
+        private static extern bool CloseHandle(IntPtr handle);
+
+        [DllImport("ntdll.dll")]
+        private static extern int NtQueryInformationProcess(
+            IntPtr process,
+            int processInformationClass,
+            out PROCESS_BASIC_INFORMATION processInformation,
+            int processInformationLength,
+            out int returnLength);
     }
 }
