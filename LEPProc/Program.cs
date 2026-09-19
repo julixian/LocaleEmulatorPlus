@@ -243,10 +243,6 @@ namespace LEPProc
                     GetCharsetFromANSICodepage(CultureInfo.GetCultureInfo(profile.Location)
                         .TextInfo.ANSICodePage);
 
-                var registries = profile.RedirectRegistry
-                    ? RegistryEntriesLoader.GetRegistryEntries(profile.IsAdvancedRedirection)
-                    : null;
-
                 var l = new LoaderWrapper
                 {
                     ApplicationName = applicationName,
@@ -256,20 +252,11 @@ namespace LEPProc
                     OemCodePage = oemCodePage,
                     LocaleID = localeID,
                     DefaultCharset = defaultCharset,
-                    HookUILanguageAPI = profile.IsAdvancedRedirection ? (uint) 1 : 0,
+                    RegistryRedirectionMode = (uint) profile.RegistryRedirectionMode,
+                    HookUILanguageMode = (uint) profile.HookUILanguageMode,
                     Timezone = profile.Timezone,
-                    NumberOfRegistryRedirectionEntries = registries?.Length ?? 0,
                     DebugMode = profile.RunWithSuspend
                 };
-
-                registries?.ToList()
-                    .ForEach(
-                        item =>
-                            l.AddRegistryRedirectEntry(item.Root,
-                                item.Key,
-                                item.Name,
-                                item.Type,
-                                item.GetValue(CultureInfo.GetCultureInfo(profile.Location))));
 
                 uint ret;
                 if ((ret = l.Start()) != 0)

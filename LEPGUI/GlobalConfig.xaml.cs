@@ -46,9 +46,8 @@ namespace LEPGUI
             crt.ShowInMainMenu = cbShowInMainMenu.IsChecked != null && (bool)cbShowInMainMenu.IsChecked;
 
             crt.RunAsAdmin = cbStartAsAdmin.IsChecked != null && (bool)cbStartAsAdmin.IsChecked;
-            crt.RedirectRegistry = cbRedirectRegistry.IsChecked != null && (bool)cbRedirectRegistry.IsChecked;
-            crt.IsAdvancedRedirection = cbIsAdvancedRedirection.IsChecked != null
-                                        && (bool)cbIsAdvancedRedirection.IsChecked;
+            crt.RegistryRedirectionMode = cbRegistryRedirectionMode.SelectedIndex;
+            crt.HookUILanguageMode = cbHookUILanguageMode.SelectedIndex;
             crt.RunWithSuspend = cbStartAsSuspend.IsChecked != null && (bool)cbStartAsSuspend.IsChecked;
 
             _profiles[cbGlobalProfiles.SelectedIndex] = crt;
@@ -73,8 +72,8 @@ namespace LEPGUI
 
             cbShowInMainMenu.IsChecked = crt.ShowInMainMenu;
             cbStartAsAdmin.IsChecked = crt.RunAsAdmin;
-            cbRedirectRegistry.IsChecked = crt.RedirectRegistry;
-            cbIsAdvancedRedirection.IsChecked = crt.IsAdvancedRedirection;
+            cbRegistryRedirectionMode.SelectedIndex = crt.RegistryRedirectionMode;
+            cbHookUILanguageMode.SelectedIndex = crt.HookUILanguageMode;
             cbStartAsSuspend.IsChecked = crt.RunWithSuspend;
         }
 
@@ -110,8 +109,8 @@ namespace LEPGUI
                                     _cultureInfos[cbLocation.SelectedIndex].Name,
                                     _timezones[cbTimezone.SelectedIndex].Id,
                                     cbStartAsAdmin.IsChecked != null && (bool)cbStartAsAdmin.IsChecked,
-                                    cbRedirectRegistry.IsChecked != null && (bool)cbRedirectRegistry.IsChecked,
-                                    cbIsAdvancedRedirection.IsChecked != null && (bool)cbIsAdvancedRedirection.IsChecked,
+                                    cbRegistryRedirectionMode.SelectedIndex,
+                                    cbHookUILanguageMode.SelectedIndex,
                                     cbStartAsSuspend.IsChecked != null && (bool)cbStartAsSuspend.IsChecked);
 
             _profiles.Add(pro);

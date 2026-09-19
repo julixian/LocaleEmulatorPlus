@@ -16,9 +16,15 @@
     <system:String x:Key="Timezone">时区</system:String>
     <system:String x:Key="DebugOptions">高级选项</system:String>
     <system:String x:Key="AsAdmin">以管理员权限运行</system:String>
-    <system:String x:Key="RedirectRegistry">伪造语言相关注册表键值</system:String>
-    <system:String x:Key="IsAdvancedRedirection">伪造系统 UI 语言</system:String>
     <system:String x:Key="WithCREATESUSPENDED">用 CREATE__SUSPENDED 标志创建进程</system:String>
     <system:String x:Key="Miscellaneous">其它</system:String>
     <system:String x:Key="ShowInMainMenu">在一级菜单中显示此配置</system:String>
+    <system:String x:Key="RegistryRedirectionMode">注册表重定向</system:String>
+    <system:String x:Key="RegistryRedirectionCore">0 - Core 默认（3 项）</system:String>
+    <system:String x:Key="RegistryRedirectionBasic">1 - 基础（4 项）</system:String>
+    <system:String x:Key="RegistryRedirectionAdvanced">2 - 高级（8 项）</system:String>
+    <system:String x:Key="HookUILanguageMode">UI 语言 Hook</system:String>
+    <system:String x:Key="UILanguageHookOff">0 - 关闭</system:String>
+    <system:String x:Key="UILanguageHookWin32">1 - Win32 API</system:String>
+    <system:String x:Key="UILanguageHookNative">2 - Native API + MUI</system:String>
 </ResourceDictionary>

@@ -3,11 +3,11 @@ namespace LEPCommonLibrary
     public struct LEPProfile
     {
         public string Guid;
-        public bool IsAdvancedRedirection;
         public string Location;
         public string Name;
         public string Parameter;
-        public bool RedirectRegistry;
+        public int RegistryRedirectionMode;
+        public int HookUILanguageMode;
         public bool RunAsAdmin;
         public bool RunWithSuspend;
         public bool ShowInMainMenu;
@@ -26,8 +26,8 @@ namespace LEPCommonLibrary
                 "ja-JP",
                 "Tokyo Standard Time",
                 false,
-                true,
-                false,
+                2,
+                1,
                 false)
         {
         }
@@ -42,8 +42,8 @@ namespace LEPCommonLibrary
                          string location,
                          string timezone,
                          bool runAsAdmin,
-                         bool redirectRegistry,
-                         bool isAdvancedRedirection,
+                         int registryRedirectionMode,
+                         int hookUILanguageMode,
                          bool runWithSuspend)
         {
             Name = name;
@@ -53,8 +53,8 @@ namespace LEPCommonLibrary
             Location = location;
             Timezone = timezone;
             RunAsAdmin = runAsAdmin;
-            RedirectRegistry = redirectRegistry;
-            IsAdvancedRedirection = isAdvancedRedirection;
+            RegistryRedirectionMode = registryRedirectionMode;
+            HookUILanguageMode = hookUILanguageMode;
             RunWithSuspend = runWithSuspend;
         }
     }

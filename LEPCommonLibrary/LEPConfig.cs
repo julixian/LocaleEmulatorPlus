@@ -46,8 +46,8 @@ namespace LEPCommonLibrary
                                                    p.Element("Location").Value,
                                                    p.Element("Timezone").Value,
                                                    bool.Parse(p.TryGetValue("RunAsAdmin", "false")),
-                                                   bool.Parse(p.TryGetValue("RedirectRegistry", "true")),
-                                                   bool.Parse(p.TryGetValue("IsAdvancedRedirection", "true")),
+                                                   ParseMode(p.Element("RegistryRedirectionMode").Value, 2),
+                                                   ParseMode(p.TryGetValue("HookUILanguageMode", "1"), 1),
                                                    bool.Parse(p.TryGetValue("RunWithSuspend", "false"))
                                          )
                         ).ToArray();
@@ -89,8 +89,8 @@ namespace LEPCommonLibrary
                                                     "ja-JP",
                                                     "Tokyo Standard Time",
                                                     false,
-                                                    true,
-                                                    true,
+                                                    2,
+                                                    1,
                                                     false
                                           ),
                                       new LEPProfile("Run in Japanese (Admin)",
@@ -100,8 +100,8 @@ namespace LEPCommonLibrary
                                                     "ja-JP",
                                                     "Tokyo Standard Time",
                                                     true,
-                                                    true,
-                                                    true,
+                                                    2,
+                                                    1,
                                                     false
                                           )
                                   };
@@ -119,6 +119,12 @@ namespace LEPCommonLibrary
             return defaultValue;
         }
 
+        private static int ParseMode(string value, int defaultValue)
+        {
+            int mode;
+            return int.TryParse(value, out mode) && mode >= 0 && mode <= 2 ? mode : defaultValue;
+        }
+
         private static void WriteConfig(string writeTo, params LEPProfile[] profiles)
         {
             var baseNode = new XElement("Profiles");
@@ -133,8 +139,8 @@ namespace LEPCommonLibrary
                                           new XElement("Location", pro.Location),
                                           new XElement("Timezone", pro.Timezone),
                                           new XElement("RunAsAdmin", pro.RunAsAdmin),
-                                          new XElement("RedirectRegistry", pro.RedirectRegistry),
-                                          new XElement("IsAdvancedRedirection", pro.IsAdvancedRedirection),
+                                          new XElement("RegistryRedirectionMode", pro.RegistryRedirectionMode),
+                                          new XElement("HookUILanguageMode", pro.HookUILanguageMode),
                                           new XElement("RunWithSuspend", pro.RunWithSuspend)
                                  )
                     );

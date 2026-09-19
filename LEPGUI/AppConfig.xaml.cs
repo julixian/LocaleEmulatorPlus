@@ -34,7 +34,8 @@ namespace LEPGUI
             _timezones = TimeZoneInfo.GetSystemTimeZones().ToList();
             cbTimezone.ItemsSource = _timezones.Select(t => t.DisplayName);
             cbTimezone.SelectedIndex = _timezones.FindIndex(tz => tz.Id == "Tokyo Standard Time");
-            cbIsAdvancedRedirection.IsChecked = true;
+            cbRegistryRedirectionMode.SelectedIndex = 2;
+            cbHookUILanguageMode.SelectedIndex = 1;
 
             // Load exists config.
             var configs = LEPConfig.GetProfiles(App.StandaloneFilePath);
@@ -51,8 +52,8 @@ namespace LEPGUI
                 cbLocation.SelectedIndex = _cultureInfos.FindIndex(ci => ci.Name == conf.Location);
 
                 cbStartAsAdmin.IsChecked = conf.RunAsAdmin;
-                cbRedirectRegistry.IsChecked = conf.RedirectRegistry;
-                cbIsAdvancedRedirection.IsChecked = conf.IsAdvancedRedirection;
+                cbRegistryRedirectionMode.SelectedIndex = conf.RegistryRedirectionMode;
+                cbHookUILanguageMode.SelectedIndex = conf.HookUILanguageMode;
                 cbStartAsSuspend.IsChecked = conf.RunWithSuspend;
             }
         }
@@ -66,8 +67,8 @@ namespace LEPGUI
                                     _cultureInfos[cbLocation.SelectedIndex].Name,
                                     _timezones[cbTimezone.SelectedIndex].Id,
                                     cbStartAsAdmin.IsChecked != null && (bool)cbStartAsAdmin.IsChecked,
-                                    cbRedirectRegistry.IsChecked != null && (bool)cbRedirectRegistry.IsChecked,
-                                    cbIsAdvancedRedirection.IsChecked != null && (bool)cbIsAdvancedRedirection.IsChecked,
+                                    cbRegistryRedirectionMode.SelectedIndex,
+                                    cbHookUILanguageMode.SelectedIndex,
                                     cbStartAsSuspend.IsChecked != null && (bool)cbStartAsSuspend.IsChecked
                 );
 

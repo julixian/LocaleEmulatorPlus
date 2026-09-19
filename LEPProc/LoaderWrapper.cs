@@ -12,9 +12,8 @@ namespace LEPProc
     {
         private const uint CREATE_NORMAL = 0x00000000;
         private const uint CREATE_SUSPENDED = 0x00000004;
-        private byte[] _defaultFaceName = new byte[64];
+        private const uint LEP_ENVIRONMENT_VERSION = 2;
         private LEPB _lepb;
-        private LEPRegistryRedirector _registry = new LEPRegistryRedirector(0);
 
         internal LoaderWrapper()
             : this(null, null, null)
@@ -34,14 +33,14 @@ namespace LEPProc
 
             _lepb = new LEPB
                    {
+                       Size = (uint)Marshal.SizeOf(typeof(LEPB)),
+                       Version = LEP_ENVIRONMENT_VERSION,
                        AnsiCodePage = 932,
                        OemCodePage = 932,
                        LocaleID = 0x411,
                        DefaultCharset = 128,
-                       HookUILanguageAPI = 0,
-                       // As we have abandoned the "default font" parameter,
-                       // we decide to put here some empty bytes.
-                       DefaultFaceName = new byte[64]
+                       RegistryRedirectionMode = 2,
+                       HookUILanguageMode = 1
                    };
             Timezone = "Tokyo Standard Time";
         }
@@ -103,12 +102,21 @@ namespace LEPProc
         }
 
         /// <summary>
-        ///     Should we hook UI-related API? Default value is 0.
+        ///     Registry redirection mode: 0 = legacy core 3, 1 = basic 4, 2 = advanced 8.
         /// </summary>
-        internal uint HookUILanguageAPI
+        internal uint RegistryRedirectionMode
         {
-            get { return _lepb.HookUILanguageAPI; }
-            set { _lepb.HookUILanguageAPI = value; }
+            get { return _lepb.RegistryRedirectionMode; }
+            set { _lepb.RegistryRedirectionMode = value; }
+        }
+
+        /// <summary>
+        ///     UI-language hook mode: 0 = off, 1 = Win32 APIs, 2 = native UI APIs and MUI.
+        /// </summary>
+        internal uint HookUILanguageMode
+        {
+            get { return _lepb.HookUILanguageMode; }
+            set { _lepb.HookUILanguageMode = value; }
         }
 
         /// <summary>
@@ -142,29 +150,6 @@ namespace LEPProc
         }
 
         /// <summary>
-        ///     Get or set the number of registry redirection entries.
-        /// </summary>
-        internal int NumberOfRegistryRedirectionEntries
-        {
-            get { return _registry.NumberOfRegistryRedirectionEntries; }
-            set { _registry = new LEPRegistryRedirector(value); }
-        }
-
-        internal bool AddRegistryRedirectEntry(
-            string root,
-            string subkey,
-            string valueName,
-            string dataType,
-            string data)
-        {
-            return _registry.AddRegistryEntry(root,
-                                              subkey,
-                                              valueName,
-                                              dataType,
-                                              data);
-        }
-
-        /// <summary>
         ///     Create process.
         /// </summary>
         /// <returns>Error number</returns>
@@ -174,7 +159,6 @@ namespace LEPProc
                 throw new Exception("ApplicationName cannot null.");
 
             var newLEPB = ArrayExtensions.StructToBytes(_lepb);
-            newLEPB = newLEPB.CombineWith(_registry.GetBinaryData());
 
             var locLEPB = Marshal.AllocHGlobal(newLEPB.Length);
             Marshal.Copy(newLEPB, 0, locLEPB, newLEPB.Length);
@@ -347,12 +331,14 @@ namespace LEPProc
         [StructLayout(LayoutKind.Sequential)]
         internal struct LEPB
         {
+            internal uint Size;
+            internal uint Version;
             internal uint AnsiCodePage;
             internal uint OemCodePage;
             internal uint LocaleID;
             internal uint DefaultCharset;
-            internal uint HookUILanguageAPI;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 64)] internal byte[] DefaultFaceName;
+            internal uint RegistryRedirectionMode;
+            internal uint HookUILanguageMode;
             internal RTL_TIME_ZONE_INFORMATION Timezone;
         }
 

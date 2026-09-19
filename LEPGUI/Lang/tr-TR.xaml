@@ -16,9 +16,15 @@
     <system:String x:Key="Timezone">Saat dilimi</system:String>
     <system:String x:Key="DebugOptions">Gelişmiş Ayarlar</system:String>
     <system:String x:Key="AsAdmin">Yönetici olarak çalıştır</system:String>
-    <system:String x:Key="RedirectRegistry">Kayıt Defterinde dil bağlantılı sahte anahtarlar</system:String>
-    <system:String x:Key="IsAdvancedRedirection">Sahte sistem arayüz dili</system:String>
     <system:String x:Key="WithCREATESUSPENDED">İşlemi CREATE__SUSPENDED ile yarat</system:String>
     <system:String x:Key="Miscellaneous">Çeşitli</system:String>
     <system:String x:Key="ShowInMainMenu">Bu profili ana menüde göster</system:String>
+    <system:String x:Key="RegistryRedirectionMode">Registry redirection</system:String>
+    <system:String x:Key="RegistryRedirectionCore">0 - Core (3 values)</system:String>
+    <system:String x:Key="RegistryRedirectionBasic">1 - Basic (4 values)</system:String>
+    <system:String x:Key="RegistryRedirectionAdvanced">2 - Advanced (8 values)</system:String>
+    <system:String x:Key="HookUILanguageMode">UI language hook</system:String>
+    <system:String x:Key="UILanguageHookOff">0 - Off</system:String>
+    <system:String x:Key="UILanguageHookWin32">1 - Win32 APIs</system:String>
+    <system:String x:Key="UILanguageHookNative">2 - Native APIs + MUI</system:String>
 </ResourceDictionary>

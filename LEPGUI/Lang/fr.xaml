@@ -16,9 +16,15 @@
     <system:String x:Key="Timezone">Fuseau horaire</system:String>
     <system:String x:Key="DebugOptions">Options avancées</system:String>
     <system:String x:Key="AsAdmin">Exécuter en tant qu'administrateur</system:String>
-    <system:String x:Key="RedirectRegistry">Utiliser un faux registre</system:String>
-    <system:String x:Key="IsAdvancedRedirection">Utiliser une fausse langue système</system:String>
     <system:String x:Key="WithCREATESUSPENDED">Créer processus avec CREATE__SUSPENDED</system:String>
     <system:String x:Key="Miscellaneous">Divers</system:String>
     <system:String x:Key="ShowInMainMenu">Afficher ce profil dans le menu principal</system:String>
+    <system:String x:Key="RegistryRedirectionMode">Registry redirection</system:String>
+    <system:String x:Key="RegistryRedirectionCore">0 - Core (3 values)</system:String>
+    <system:String x:Key="RegistryRedirectionBasic">1 - Basic (4 values)</system:String>
+    <system:String x:Key="RegistryRedirectionAdvanced">2 - Advanced (8 values)</system:String>
+    <system:String x:Key="HookUILanguageMode">UI language hook</system:String>
+    <system:String x:Key="UILanguageHookOff">0 - Off</system:String>
+    <system:String x:Key="UILanguageHookWin32">1 - Win32 APIs</system:String>
+    <system:String x:Key="UILanguageHookNative">2 - Native APIs + MUI</system:String>
 </ResourceDictionary>
