@@ -12,7 +12,7 @@ namespace LEPProc
     {
         private const uint CREATE_NORMAL = 0x00000000;
         private const uint CREATE_SUSPENDED = 0x00000004;
-        private const uint LEP_ENVIRONMENT_VERSION = 2;
+        private const uint LEP_ENVIRONMENT_VERSION = 3;
         private LEPB _lepb;
 
         internal LoaderWrapper()
@@ -128,13 +128,14 @@ namespace LEPProc
             get { return _lepb.Timezone.GetStandardName(); }
             set
             {
-                if (value.Length > 32)
+                if (value.Length >= 128)
                     throw new Exception("String too long.");
 
                 if (false == Enumerable.Any(TimeZoneInfo.GetSystemTimeZones(), item => item.Id == value))
                     throw new Exception($"Timezone \"{value}\" not found in your system.");
 
                 var tzi = TimeZoneInfo.FindSystemTimeZoneById(value);
+                _lepb.TimeZoneId = SetBytes(new byte[256], Encoding.Unicode.GetBytes(value));
                 _lepb.Timezone.SetStandardName(tzi.StandardName);
                 _lepb.Timezone.SetDaylightName(tzi.StandardName);
 
@@ -340,6 +341,7 @@ namespace LEPProc
             internal uint RegistryRedirectionMode;
             internal uint HookUILanguageMode;
             internal RTL_TIME_ZONE_INFORMATION Timezone;
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 256)] internal byte[] TimeZoneId;
         }
 
         [StructLayout(LayoutKind.Sequential)]
