@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <VersionInfo>
-  <Version>2.0.3.0</Version>
-  <Date>20261006</Date>
+  <Version>2.0.4.0</Version>
+  <Date>20261024</Date>
   <Url>https://github.com/julixian/LocaleEmulatorPlus/releases</Url>
-  <Note>Locale Emulator Plus 2.0.3: fix Japanese time-zone name compatibility on localized Windows.</Note>
+  <Note>Locale Emulator Plus 2.0.4: preserve process handles during cross-architecture locale injection.</Note>
 </VersionInfo>
