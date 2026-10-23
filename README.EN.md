@@ -1,6 +1,6 @@
 # LocaleEmulatorPlus
 
-English | [简体中文](README.md)
+[简体中文](README.md) | English
 
 LocaleEmulatorPlus is a maintained fork of the original [Locale Emulator](https://github.com/xupefei/Locale-Emulator) GUI and launcher layer.
 The original upstream README has been preserved as [README_ORG.md](README_ORG.md).

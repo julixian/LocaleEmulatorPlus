@@ -1,6 +1,6 @@
 # LocaleEmulatorPlus
 
-[English](README.EN.md) | 简体中文
+简体中文 | [English](README.EN.md)
 
 LocaleEmulatorPlus 是原 [Locale Emulator](https://github.com/xupefei/Locale-Emulator) 的 GUI 与启动器部分的维护分支。原项目 README 已保留为 [README_ORG.md](README_ORG.md)。
 
