@@ -1,10 +1,6 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 using Amemiya.Extensions;
-using Microsoft.Win32;
 
 namespace LEPProc
 {
@@ -12,7 +8,7 @@ namespace LEPProc
     {
         private const uint CREATE_NORMAL = 0x00000000;
         private const uint CREATE_SUSPENDED = 0x00000004;
-        private const uint LEP_ENVIRONMENT_VERSION = 3;
+        private const uint LEP_ENVIRONMENT_VERSION = 4;
         private LEPB _lepb;
 
         internal LoaderWrapper()
@@ -40,7 +36,9 @@ namespace LEPProc
                        LocaleID = 0x411,
                        DefaultCharset = 128,
                        RegistryRedirectionMode = 2,
-                       HookUILanguageMode = 1
+                       HookUILanguageMode = 1,
+                       StandardNameOverride = string.Empty,
+                       DaylightNameOverride = string.Empty
                    };
             Timezone = "Tokyo Standard Time";
         }
@@ -125,29 +123,32 @@ namespace LEPProc
         /// </summary>
         internal string Timezone
         {
-            get { return _lepb.Timezone.GetStandardName(); }
+            get { return _lepb.TimeZoneId; }
             set
             {
-                if (value.Length >= 128)
-                    throw new Exception("String too long.");
-
-                if (false == Enumerable.Any(TimeZoneInfo.GetSystemTimeZones(), item => item.Id == value))
-                    throw new Exception($"Timezone \"{value}\" not found in your system.");
-
-                var tzi = TimeZoneInfo.FindSystemTimeZoneById(value);
-                _lepb.TimeZoneId = SetBytes(new byte[256], Encoding.Unicode.GetBytes(value));
-                _lepb.Timezone.SetStandardName(tzi.StandardName);
-                _lepb.Timezone.SetDaylightName(tzi.StandardName);
-
-                var tzi2 = ReadTZIFromRegistry(value);
-                _lepb.Timezone.Bias = tzi2.Bias;
-                _lepb.Timezone.StandardBias = tzi2.StandardBias;
-                _lepb.Timezone.DaylightBias = 0; //tzi2.DaylightBias;
-
-                //SYSTEMTIME is not the same with TIME_FIELDS (from RTL)
-                //_lepb.Timezone.StandardDate = SYSTEMTIME_To_TIME_FIELDS(tzi2.StandardDate);
-                //_lepb.Timezone.DaylightDate = SYSTEMTIME_To_TIME_FIELDS(tzi2.DaylightDate);
+                ValidateEnvironmentString(value, 128);
+                if (value.Length == 0 || value.IndexOf('\\') >= 0 || value.IndexOf('/') >= 0)
+                    throw new ArgumentException("A Windows time-zone ID is required.", nameof(value));
+                _lepb.TimeZoneId = value;
             }
+        }
+
+        internal string StandardNameOverride
+        {
+            get { return _lepb.StandardNameOverride; }
+            set { ValidateEnvironmentString(value, 32); _lepb.StandardNameOverride = value; }
+        }
+
+        internal string DaylightNameOverride
+        {
+            get { return _lepb.DaylightNameOverride; }
+            set { ValidateEnvironmentString(value, 32); _lepb.DaylightNameOverride = value; }
+        }
+
+        private static void ValidateEnvironmentString(string value, int capacity)
+        {
+            if (value == null || value.Length >= capacity || value.IndexOf('\0') >= 0)
+                throw new ArgumentException($"Expected fewer than {capacity} UTF-16 characters without embedded NULs.", nameof(value));
         }
 
         /// <summary>
@@ -166,7 +167,7 @@ namespace LEPProc
 
             AttachConsole(ATTACH_PARENT_PROCESS);
 
-            var startupInfo = new STARTUPINFO();
+            var startupInfo = new STARTUPINFO { cb = Marshal.SizeOf(typeof(STARTUPINFO)) };
             var processInformation = new PROCESS_INFORMATION();
 
             var ret = Environment.Is64BitProcess
@@ -205,68 +206,6 @@ namespace LEPProc
             return ret;
         }
 
-        private static byte[] SetBytes(byte[] bytesInput, IEnumerable<byte> bytesValue)
-        {
-            var i = 0;
-            foreach (var byteChar in bytesValue)
-            {
-                bytesInput[i] = byteChar;
-                i++;
-            }
-            return bytesInput;
-        }
-
-        public static T BytesToStruct<T>(byte[] bytes)
-        {
-            var size = Marshal.SizeOf(typeof (T));
-            var buffer = Marshal.AllocHGlobal(size);
-            try
-            {
-                Marshal.Copy(bytes, 0, buffer, size);
-                return (T)Marshal.PtrToStructure(buffer, typeof (T));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(buffer);
-            }
-        }
-
-        private TIME_FIELDS SYSTEMTIME_To_TIME_FIELDS(_SYSTEMTIME st)
-        {
-            return new TIME_FIELDS
-                   {
-                       Year = st.wYear,
-                       Month = st.wMonth,
-                       Day = st.wDay,
-                       Hour = st.wHour,
-                       Minute = st.wMinute,
-                       Second = st.wSecond,
-                       Milliseconds = st.wMilliseconds,
-                       Weekday = st.wDayOfWeek
-                   };
-        }
-
-        private _REG_TZI_FORMAT ReadTZIFromRegistry(string id)
-        {
-            var tzi =
-                (byte[])
-                Registry.GetValue(
-                                  $"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Time Zones\\{id}",
-                                  "TZI",
-                                  null);
-
-            return BytesToStruct<_REG_TZI_FORMAT>(tzi);
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct PROCESS_INFORMATION
-        {
-            public IntPtr hProcess;
-            public IntPtr hThread;
-            public uint dwProcessId;
-            public uint dwThreadId;
-        }
-
         [StructLayout(LayoutKind.Sequential)]
         public struct STARTUPINFO
         {
@@ -291,7 +230,7 @@ namespace LEPProc
         }
 
         [DllImport("LoaderDll_x86.dll", CharSet = CharSet.Unicode, EntryPoint = "LepCreateProcess")]
-        public static extern uint LepCreateProcessX86(IntPtr lepb,
+        internal static extern uint LepCreateProcessX86(IntPtr lepb,
                                                      [MarshalAs(UnmanagedType.LPWStr), In] string applicationName,
                                                      [MarshalAs(UnmanagedType.LPWStr), In] string commandLine,
                                                      [MarshalAs(UnmanagedType.LPWStr), In] string currentDirectory,
@@ -304,7 +243,7 @@ namespace LEPProc
                                                      IntPtr token);
 
         [DllImport("LoaderDll_x64.dll", CharSet = CharSet.Unicode, EntryPoint = "LepCreateProcess")]
-        public static extern uint LepCreateProcessX64(IntPtr lepb,
+        internal static extern uint LepCreateProcessX64(IntPtr lepb,
                                                      [MarshalAs(UnmanagedType.LPWStr), In] string applicationName,
                                                      [MarshalAs(UnmanagedType.LPWStr), In] string commandLine,
                                                      [MarshalAs(UnmanagedType.LPWStr), In] string currentDirectory,
@@ -329,7 +268,7 @@ namespace LEPProc
 
         const uint ATTACH_PARENT_PROCESS = 0x0ffffffff;
 
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal struct LEPB
         {
             internal uint Size;
@@ -340,91 +279,19 @@ namespace LEPProc
             internal uint DefaultCharset;
             internal uint RegistryRedirectionMode;
             internal uint HookUILanguageMode;
-            internal RTL_TIME_ZONE_INFORMATION Timezone;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 256)] internal byte[] TimeZoneId;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)] internal string TimeZoneId;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] internal string StandardNameOverride;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] internal string DaylightNameOverride;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct PML_PROCESS_INFORMATION
+        internal struct PROCESS_INFORMATION
         {
             internal IntPtr hProcess;
             internal IntPtr hThread;
             internal uint dwProcessId;
             internal uint dwThreadId;
-            internal IntPtr FirstCallLdrLoadDll;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct RTL_TIME_ZONE_INFORMATION
-        {
-            internal int Bias;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 64)] internal byte[] StandardName;
-            internal TIME_FIELDS StandardDate;
-            internal int StandardBias;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 64)] internal byte[] DaylightName;
-            internal TIME_FIELDS DaylightDate;
-            internal int DaylightBias;
-
-            public override string ToString()
-            {
-                return
-                    $"StandardName={Encoding.Unicode.GetString(StandardName)}";
-            }
-
-            public string GetStandardName()
-            {
-                return Encoding.Unicode.GetString(StandardName).Replace("\x00", "");
-            }
-
-            public void SetStandardName(string name)
-            {
-                StandardName = SetBytes(new byte[64], Encoding.Unicode.GetBytes(name));
-            }
-
-            public string GetDaylightName()
-            {
-                return Encoding.Unicode.GetString(DaylightName).Replace("\x00", "");
-            }
-
-            public void SetDaylightName(string name)
-            {
-                DaylightName = SetBytes(new byte[64], Encoding.Unicode.GetBytes(name));
-            }
-        }
-
-        private struct _REG_TZI_FORMAT
-        {
-            internal int Bias;
-            internal int StandardBias;
-            internal int DaylightBias;
-            internal _SYSTEMTIME StandardDate;
-            internal _SYSTEMTIME DaylightDate;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct _SYSTEMTIME
-        {
-            internal ushort wYear;
-            internal ushort wMonth;
-            internal ushort wDayOfWeek;
-            internal ushort wDay;
-            internal ushort wHour;
-            internal ushort wMinute;
-            internal ushort wSecond;
-            internal ushort wMilliseconds;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct TIME_FIELDS
-        {
-            internal ushort Year; // range [1601...]
-            internal ushort Month; // range [1..12]
-            internal ushort Day; // range [1..31]
-            internal ushort Hour; // range [0..23]
-            internal ushort Minute; // range [0..59]
-            internal ushort Second; // range [0..59]
-            internal ushort Milliseconds; // range [0..999]
-            internal ushort Weekday; // range [0..6] == [Sunday..Saturday]
-        }
     }
 }
