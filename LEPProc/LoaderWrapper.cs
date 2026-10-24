@@ -33,8 +33,8 @@ namespace LEPProc
                        Version = LEP_ENVIRONMENT_VERSION,
                        AnsiCodePage = 932,
                        OemCodePage = 932,
-                       LocaleID = 0x411,
-                       DefaultCharset = 128,
+                       LocaleId = 0x411,
+                       FontCharset = 128,
                        RegistryRedirectionMode = 2,
                        HookUILanguageMode = 1,
                        StandardNameOverride = string.Empty,
@@ -82,21 +82,21 @@ namespace LEPProc
         }
 
         /// <summary>
-        ///     New LocaleID. Default value is 0x411(1041).
+        ///     New LocaleId. Default value is 0x411(1041).
         /// </summary>
-        internal uint LocaleID
+        internal uint LocaleId
         {
-            get { return _lepb.LocaleID; }
-            set { _lepb.LocaleID = value; }
+            get { return _lepb.LocaleId; }
+            set { _lepb.LocaleId = value; }
         }
 
         /// <summary>
-        ///     New DefaultCharset. Default value is 128(Shift-JIS).
+        ///     New FontCharset. Default value is 128(Shift-JIS).
         /// </summary>
-        internal uint DefaultCharset
+        internal uint FontCharset
         {
-            get { return _lepb.DefaultCharset; }
-            set { _lepb.DefaultCharset = value; }
+            get { return _lepb.FontCharset; }
+            set { _lepb.FontCharset = value; }
         }
 
         /// <summary>
@@ -123,13 +123,13 @@ namespace LEPProc
         /// </summary>
         internal string Timezone
         {
-            get { return _lepb.TimeZoneId; }
+            get { return _lepb.TimezoneId; }
             set
             {
                 ValidateEnvironmentString(value, 128);
                 if (value.Length == 0 || value.IndexOf('\\') >= 0 || value.IndexOf('/') >= 0)
                     throw new ArgumentException("A Windows time-zone ID is required.", nameof(value));
-                _lepb.TimeZoneId = value;
+                _lepb.TimezoneId = value;
             }
         }
 
@@ -275,11 +275,11 @@ namespace LEPProc
             internal uint Version;
             internal uint AnsiCodePage;
             internal uint OemCodePage;
-            internal uint LocaleID;
-            internal uint DefaultCharset;
+            internal uint LocaleId;
+            internal uint FontCharset;
             internal uint RegistryRedirectionMode;
             internal uint HookUILanguageMode;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)] internal string TimeZoneId;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)] internal string TimezoneId;
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] internal string StandardNameOverride;
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] internal string DaylightNameOverride;
         }

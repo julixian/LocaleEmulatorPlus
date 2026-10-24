@@ -242,8 +242,8 @@ namespace LEPProc
                 var currentDirectory = Path.GetDirectoryName(absPath);
                 var ansiCodePage = (uint) CultureInfo.GetCultureInfo(profile.Location).TextInfo.ANSICodePage;
                 var oemCodePage = (uint) CultureInfo.GetCultureInfo(profile.Location).TextInfo.OEMCodePage;
-                var localeID = (uint) CultureInfo.GetCultureInfo(profile.Location).TextInfo.LCID;
-                var defaultCharset = (uint)
+                var localeId = (uint) CultureInfo.GetCultureInfo(profile.Location).TextInfo.LCID;
+                var fontCharset = (uint)
                     GetCharsetFromANSICodepage(CultureInfo.GetCultureInfo(profile.Location)
                         .TextInfo.ANSICodePage);
 
@@ -254,8 +254,8 @@ namespace LEPProc
                     CurrentDirectory = currentDirectory,
                     AnsiCodePage = ansiCodePage,
                     OemCodePage = oemCodePage,
-                    LocaleID = localeID,
-                    DefaultCharset = defaultCharset,
+                    LocaleId = localeId,
+                    FontCharset = fontCharset,
                     RegistryRedirectionMode = (uint) profile.RegistryRedirectionMode,
                     HookUILanguageMode = (uint) profile.HookUILanguageMode,
                     Timezone = profile.Timezone,

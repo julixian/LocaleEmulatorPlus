@@ -28,8 +28,8 @@ internal static class LoaderAbiProbe
     private static void CheckLayout()
     {
         Assert(Marshal.SizeOf(typeof(LoaderWrapper.LEPB)) == 416, "LEPB size");
-        string[] fields = { "Size", "Version", "AnsiCodePage", "OemCodePage", "LocaleID", "DefaultCharset",
-            "RegistryRedirectionMode", "HookUILanguageMode", "TimeZoneId", "StandardNameOverride", "DaylightNameOverride" };
+        string[] fields = { "Size", "Version", "AnsiCodePage", "OemCodePage", "LocaleId", "FontCharset",
+            "RegistryRedirectionMode", "HookUILanguageMode", "TimezoneId", "StandardNameOverride", "DaylightNameOverride" };
         int[] offsets = { 0, 4, 8, 12, 16, 20, 24, 28, 32, 288, 352 };
         for (int i = 0; i < fields.Length; ++i)
             Assert(Marshal.OffsetOf(typeof(LoaderWrapper.LEPB), fields[i]).ToInt32() == offsets[i], fields[i]);
