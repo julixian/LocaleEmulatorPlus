@@ -2,42 +2,21 @@
 
 简体中文 | [English](README.EN.md)
 
-LocaleEmulatorPlus 是原 [Locale Emulator](https://github.com/xupefei/Locale-Emulator) 的 GUI 与启动器部分的维护分支。原项目 README 已保留为 [README_ORG.md](README_ORG.md)。
-
-本仓库包含托管 GUI、资源管理器右键菜单扩展、安装器、更新器和启动器程序。原生进程注入核心位于
+LocaleEmulatorPlus 为 Windows 程序提供按应用配置的区域、代码页和时区模拟。本仓库包含配置 GUI、资源管理器右键菜单扩展、安装器、更新器和 x86/x64 启动器。原生进程注入核心位于
 [LocaleEmulatorPlus-Core](https://github.com/julixian/LocaleEmulatorPlus-Core) 仓库。
 
-## 分支理由
+## 功能
 
-原 Locale Emulator 主要面向 x86，依赖较旧的构建环境且已被 archived 。这个分支保留原有用户工作流，同时让代码可以使用
-现代本地工具链构建，补充 x64 启动支持，并修复 LE 的若干 bug（但不再支持 Windows XP）。
+- 按程序配置和全局配置管理区域、代码页、字体、界面语言和时区。
+- 通过 Explorer 右键菜单启动程序。
+- 根据目标程序架构选择 `LEPProc_x86.exe` 或 `LEPProc_x64.exe`。
+- 配置 GUI 和右键菜单提供多语言资源；右键菜单支持外部 `Lang/*.xml` 覆盖。
 
 ![](img/menu_example.png?raw=true)
 
 PS: 在 Windows on arm 设备上转区 x86 程序需要为 `LEPProc_x86.exe` 和要转区的x86程序开启 `禁用混合执行模式`
 
 ![](img/Disable_Mixed_Execution_Mode.png?raw=true)
-
-主要变化包括：
-
-- 分离的原生核心文件：`LoaderDll_x86.dll` / `LoaderDll_x64.dll` 和
-  `LocaleEmulatorPlus_x86.dll` / `LocaleEmulatorPlus_x64.dll`；
-- 分离的启动器：`LEPProc_x86.exe` / `LEPProc_x64.exe`，会根据目标 exe 架构自动选择；
-- GUI 和生成文件整体改为 `LocaleEmulatorPlus` 命名；
-- 本分支版本重置为 `1.0.0.0`；
-- 右键菜单语言资源嵌入 `LEPContextMenuHandler.dll`，同时仍允许外部 `Lang/*.xml` 覆盖。
-
-## 继承关系
-
-LocaleEmulatorPlus 派生自 xupefei 的 Locale Emulator 项目。这个分支保留原项目中已经验证过的用户工作流：
-
-- 按程序配置和全局配置；
-- Explorer 右键菜单集成；
-- 启动器生成配置数据块，并调用原生 Loader DLL 创建目标进程；
-- WPF GUI 和 shell 扩展分别使用语言资源。
-
-项目从 `LocaleEmulator` / `LE` 改名为 `LocaleEmulatorPlus` / `LEP`，是为了让这个分支可以独立演进，
-同时避免被误认为原项目的官方版本。
 
 ## 仓库结构
 
@@ -46,7 +25,7 @@ LocaleEmulatorPlus 派生自 xupefei 的 Locale Emulator 项目。这个分支�
 - `LEPProc/`：命令行和右键菜单启动器。
 - `LEPContextMenuHandler/`：Explorer 右键菜单 COM shell 扩展。
 - `LEPInstaller/`：右键菜单 shell 扩展安装器/卸载器。
-- `LEPUpdater/`：继承下来的更新器项目。
+- `LEPUpdater/`：更新器。
 - `Build/Release/`：默认构建输出目录。
 
 GUI 构建不强制要求原生 core DLL。默认会从相邻 core 仓库寻找已有输出：
@@ -56,13 +35,13 @@ GUI 构建不强制要求原生 core DLL。默认会从相邻 core 仓库寻找�
 ..\LocaleEmulatorPlus-Core\out\x64
 ```
 
-需要使用其他 core 仓库或已准备好的 core 输出根目录时，可以设置 `CORE_DIR`。原生 core 的构建细节请看 Core
+需要使用其他 core 仓库时，可以传入 `--core-dir` 或设置 `CORE_DIR`。原生 core 的构建细节请看 Core
 仓库文档。
 
 ## 运行环境
 
 GUI、安装器、启动器和 Explorer 右键菜单扩展均面向 .NET Framework 4.8。Windows 7/8/8.1 上使用 LEP 前，
-请先安装 .NET Framework 4.8 Runtime，否则 Explorer 右键菜单可能无法显示或无法正确加载：
+请先安装 .NET Framework 4.8 Runtime，否则 Explorer 右键菜单可能无法显示或无法正确加载。不支持 Windows XP。
 
 https://dotnet.microsoft.com/zh-cn/download/dotnet-framework/net48
 
@@ -70,23 +49,24 @@ https://dotnet.microsoft.com/zh-cn/download/dotnet-framework/net48
 
 需求：
 
+- Python 3.10+，无需额外 Python 包。
 - 安装 Visual Studio，包含 MSBuild 和 .NET Framework 4.8 Targeting Pack。
 - 如果希望输出目录可以直接运行，需要提前准备好原生 core DLL。
 
 构建本 GUI 仓库：
 
-```bat
-build.bat
+```powershell
+python .\build.py
 ```
 
-可选变量：
-
-```bat
-set CONFIGURATION=Release
-set CORE_DIR=..\LocaleEmulatorPlus-Core
-set MSBUILD=C:\Path\To\MSBuild.exe
-build.bat
+```powershell
+python .\build.py --configuration Debug
+python .\build.py --core-dir D:\VSProj\LocaleEmulatorPlus-Core
+python .\build.py --msbuild 'C:\Path\To\MSBuild.exe'
+python .\build.py --dry-run
 ```
+
+默认构建 Release，使用 `vswhere` 或 PATH 查找 MSBuild。`CONFIGURATION`、`CORE_DIR`、`MSBUILD` 也可通过环境变量设置，显式参数优先。`--dry-run` 只显示构建命令和文件复制计划；任一步骤失败均立即返回非零状态。脚本生成两个架构的启动器，不会启动安装器或部署到已安装目录。
 
 输出目录：
 
@@ -98,6 +78,7 @@ Build\Release
 
 - `LEPGUI.exe`
 - `LEPInstaller.exe`
+- `LEPUpdater.exe`
 - `LEPProc_x86.exe`
 - `LEPProc_x64.exe`
 - `LEPContextMenuHandler.dll`
@@ -114,9 +95,7 @@ Build\Release
 
 ## 维护说明
 
-`LEPProc` 会构建 x86 和 x64 两个 exe，但 `LEPCommonLibrary` 是 AnyCPU。单独构建旧式 MSBuild 项目时，
-项目引用可能会查找 `LEPCommonLibrary\bin\x86\Release` 或 `LEPCommonLibrary\bin\x64\Release`。
-`build.bat` 会在构建 `LEPProc` 前把 AnyCPU 输出复制到这些架构目录，以固定这个构建细节。
+`LEPProc` 分别构建 x86、x64 两个 exe，项目引用明确以 AnyCPU 构建 `LEPCommonLibrary`。安装器嵌入公共库和右键菜单 DLL，因此在这些组件构建后生成。所有托管项目都面向 .NET Framework 4.8。
 
 ## 许可证
 

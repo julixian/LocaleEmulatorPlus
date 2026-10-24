@@ -30,5 +30,7 @@ _ReSharper*/
 *.vssscc
 $tf*/
 .vs/
+__pycache__/
+*.pyc
 /LEPInstaller/Resources/LEPCommonLibrary.dll
 /LEPInstaller/Resources/LEPContextMenuHandler.dll

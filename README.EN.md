@@ -2,50 +2,23 @@
 
 [简体中文](README.md) | English
 
-LocaleEmulatorPlus is a maintained fork of the original [Locale Emulator](https://github.com/xupefei/Locale-Emulator) GUI and launcher layer.
-The original upstream README has been preserved as [README_ORG.md](README_ORG.md).
-
-This repository contains the managed GUI, Explorer context-menu extension, installer, updater, and
-launcher programs. The native process-injection core is kept in
+LocaleEmulatorPlus provides per-application locale, code-page, and time-zone emulation for Windows programs.
+This repository contains the configuration GUI, Explorer context-menu extension, installer, updater, and
+x86/x64 launchers. The native process-injection core is kept in
 [LocaleEmulatorPlus-Core](https://github.com/julixian/LocaleEmulatorPlus-Core) repository.
 
-## Why This Fork Exists
+## Features
 
-The original Locale Emulator release is x86-focused and tied to an old build environment. This
-fork keeps the user-facing workflow while making the codebase buildable with a modern local
-toolchain, adding x64 launch support, and fixing several inherited LE bugs, but drops Windows XP
-support.
+- Per-application and global profiles for locale, code pages, fonts, UI language, and time zone.
+- Launch programs through the Explorer context menu.
+- Select `LEPProc_x86.exe` or `LEPProc_x64.exe` according to the target architecture.
+- Localized GUI and context-menu resources, with external `Lang/*.xml` overrides for the context menu.
 
 ![](img/menu_example.png?raw=true)
 
 PS: 在 Windows on arm 设备上转区 x86 程序需要为 `LEPProc_x86.exe` 和要转区的x86程序开启 `禁用混合执行模式`
 
 ![](img/Disable_Mixed_Execution_Mode.png?raw=true)
-
-The main changes are:
-
-- separate `LoaderDll_x86.dll` / `LoaderDll_x64.dll` and
-  `LocaleEmulatorPlus_x86.dll` / `LocaleEmulatorPlus_x64.dll` native core binaries;
-- separate `LEPProc_x86.exe` / `LEPProc_x64.exe` launchers, with automatic architecture selection
-  based on the target executable;
-- `LocaleEmulatorPlus` naming throughout the GUI and generated files;
-- version reset to `1.0.0.0` for this fork;
-- shell context-menu language resources embedded in the context-menu DLL, while still allowing
-  external `Lang/*.xml` files to override them.
-
-## Inheritance
-
-LocaleEmulatorPlus is derived from xupefei's Locale Emulator project. This fork keeps the proven
-user workflow from the original project:
-
-- per-application and global locale profiles;
-- Explorer context-menu integration;
-- a launcher that prepares a profile block and asks the native loader DLL to create the target
-  process;
-- language resources for both the WPF GUI and shell extension.
-
-The project was renamed from `LocaleEmulator` / `LE` to `LocaleEmulatorPlus` / `LEP` so this fork
-can evolve independently without pretending to be an official upstream release.
 
 ## Repository Layout
 
@@ -54,7 +27,7 @@ can evolve independently without pretending to be an official upstream release.
 - `LEPProc/` command-line/context-menu launcher.
 - `LEPContextMenuHandler/` Explorer context-menu COM shell extension.
 - `LEPInstaller/` installer/uninstaller for the context-menu shell extension.
-- `LEPUpdater/` inherited updater project.
+- `LEPUpdater/` updater.
 - `Build/Release/` default build output.
 
 Native core DLLs are optional for the GUI build. By default, the build script looks for an adjacent
@@ -65,14 +38,14 @@ core checkout:
 ..\LocaleEmulatorPlus-Core\out\x64
 ```
 
-Set `CORE_DIR` to another `LocaleEmulatorPlus-Core` checkout or prepared core output root when
+Use `--core-dir` or set `CORE_DIR` to another `LocaleEmulatorPlus-Core` checkout when
 needed. See the Core repository documentation for native core build details.
 
 ## Runtime
 
 The GUI, installer, launcher, and Explorer context-menu handler target .NET Framework 4.8.
 On Windows 7/8/8.1, install the .NET Framework 4.8 Runtime before using LEP, otherwise the
-Explorer context menu may fail to appear or load correctly:
+Explorer context menu may fail to appear or load correctly. Windows XP is not supported.
 
 https://dotnet.microsoft.com/zh-cn/download/dotnet-framework/net48
 
@@ -80,23 +53,28 @@ https://dotnet.microsoft.com/zh-cn/download/dotnet-framework/net48
 
 Requirements:
 
+- Python 3.10+; no third-party Python packages are required.
 - Visual Studio with MSBuild and .NET Framework 4.8 targeting pack.
 - Optional prebuilt native core DLLs if you want the output folder to be directly runnable.
 
 Build this GUI repository:
 
-```bat
-build.bat
+```powershell
+python .\build.py
 ```
 
-Optional variables:
-
-```bat
-set CONFIGURATION=Release
-set CORE_DIR=..\LocaleEmulatorPlus-Core
-set MSBUILD=C:\Path\To\MSBuild.exe
-build.bat
+```powershell
+python .\build.py --configuration Debug
+python .\build.py --core-dir D:\VSProj\LocaleEmulatorPlus-Core
+python .\build.py --msbuild 'C:\Path\To\MSBuild.exe'
+python .\build.py --dry-run
 ```
+
+Release is the default configuration. MSBuild is discovered through `vswhere` or PATH.
+`CONFIGURATION`, `CORE_DIR`, and `MSBUILD` environment variables are also supported; explicit
+arguments take precedence. `--dry-run` prints commands and copy operations without building.
+Any failed step returns a nonzero exit code immediately. Both launcher architectures are built;
+the script does not run the installer or deploy to an installed application directory.
 
 The output is written to:
 
@@ -108,6 +86,7 @@ Expected managed output files include:
 
 - `LEPGUI.exe`
 - `LEPInstaller.exe`
+- `LEPUpdater.exe`
 - `LEPProc_x86.exe`
 - `LEPProc_x64.exe`
 - `LEPContextMenuHandler.dll`
@@ -124,10 +103,9 @@ Optional native core files are copied when present:
 
 ## Notes For Maintainers
 
-`LEPProc` builds both x86 and x64 executables, but `LEPCommonLibrary` is AnyCPU. Old-style MSBuild
-project references can look for `LEPCommonLibrary\bin\x86\Release` or
-`LEPCommonLibrary\bin\x64\Release` during standalone project builds. `build.bat` intentionally
-copies the AnyCPU output into those architecture folders before building `LEPProc`.
+`LEPProc` builds x86 and x64 executables and explicitly references the AnyCPU configuration of
+`LEPCommonLibrary`. The installer embeds the common library and context-menu DLL, so those
+components are built first. All managed projects target .NET Framework 4.8.
 
 ## License
 

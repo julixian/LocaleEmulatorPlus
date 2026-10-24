@@ -152,6 +152,7 @@
     <ProjectReference Include="..\LEPCommonLibrary\LEPCommonLibrary.csproj">
       <Project>{c4def32b-8fbb-41b6-80dc-c60339402323}</Project>
       <Name>LEPCommonLibrary</Name>
+      <SetPlatform>Platform=AnyCPU</SetPlatform>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
