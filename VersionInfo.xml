@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <VersionInfo>
-  <Version>2.0.5.0</Version>
-  <Date>20261024</Date>
+  <Version>2.0.6.0</Version>
+  <Date>20261030</Date>
   <Url>https://github.com/julixian/LocaleEmulatorPlus/releases</Url>
-  <Note>Locale Emulator Plus 2.0.5：简化时区配置，支持时区名称覆盖，统一进程信息接口并改进线程活动帧管理。</Note>
+  <Note>Locale Emulator Plus 2.0.6：修复 ANSI EDIT 与输入法双字节字符处理，改进 USER32 DBCS 环境同步，并兼容部分游戏的剪贴板读取。</Note>
 </VersionInfo>
