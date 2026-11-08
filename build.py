@@ -11,8 +11,8 @@ import subprocess
 import sys
 
 
-ROOT = Path(__file__).resolve().parent
-PROJECTS = (
+kScriptRoot = Path(__file__).resolve().parent
+kProjects = (
     ("LEPCommonLibrary", "AnyCPU"),
     ("LEPContextMenuHandler", "AnyCPU"),
     ("LEPGUI", "AnyCPU"),
@@ -23,7 +23,7 @@ PROJECTS = (
 )
 
 
-def find_msbuild(explicit: str | None) -> Path:
+def findMSBuild(explicit: str | None) -> Path:
     if explicit:
         candidate = Path(explicit).expanduser()
         if candidate.is_file():
@@ -50,26 +50,26 @@ def find_msbuild(explicit: str | None) -> Path:
     raise FileNotFoundError("MSBuild not found. Install MSBuild or pass --msbuild PATH.")
 
 
-def parse_options(argv: list[str] | None = None) -> argparse.Namespace:
+def parseOptions(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--configuration", type=str.capitalize, choices=("Release", "Debug"),
                         default=os.environ.get("CONFIGURATION", "Release").capitalize())
-    parser.add_argument("--core-dir", type=Path,
-                        default=os.environ.get("CORE_DIR") or ROOT.parent / "LocaleEmulatorPlus-Core",
+    parser.add_argument("--core-dir", dest="coreDir", type=Path,
+                        default=os.environ.get("CORE_DIR") or kScriptRoot.parent / "LocaleEmulatorPlus-Core",
                         help="Core checkout containing out/x86 and out/x64")
     parser.add_argument("--msbuild", default=os.environ.get("MSBUILD"),
                         help="MSBuild.exe path; otherwise discover it through vswhere or PATH")
-    parser.add_argument("--dry-run", action="store_true", help="print commands without building or copying files")
+    parser.add_argument("--dry-run", dest="dryRun", action="store_true", help="print commands without building or copying files")
     return parser.parse_args(argv)
 
 
-def copy_core(core_dir: Path, output: Path, dry_run: bool) -> None:
+def copyCore(coreDir: Path, output: Path, dryRun: bool) -> None:
     for arch in ("x86", "x64"):
         for name in (f"LoaderDll_{arch}.dll", f"LocaleEmulatorPlus_{arch}.dll"):
-            source = core_dir / "out" / arch / name
+            source = coreDir / "out" / arch / name
             if not source.is_file():
                 print(f"[skip] Core DLL not found: {source}", flush=True)
-            elif dry_run:
+            elif dryRun:
                 print(f"[copy] {source} -> {output / name}", flush=True)
             else:
                 shutil.copy2(source, output / name)
@@ -77,34 +77,34 @@ def copy_core(core_dir: Path, output: Path, dry_run: bool) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    options = parse_options(argv)
+    options = parseOptions(argv)
     if os.name != "nt":
         print("This build requires Windows and MSBuild.", file=sys.stderr)
         return 1
     try:
-        msbuild = find_msbuild(options.msbuild)
-        for project, _ in PROJECTS:
-            source = ROOT / project / f"{project}.csproj"
+        msbuild = findMSBuild(options.msbuild)
+        for project, _ in kProjects:
+            source = kScriptRoot / project / f"{project}.csproj"
             if not source.is_file():
                 raise FileNotFoundError(source)
-        output = ROOT / "Build" / options.configuration
-        core_dir = options.core_dir.resolve()
+        output = kScriptRoot / "Build" / options.configuration
+        coreDir = options.coreDir.resolve()
         print(f"LocaleEmulatorPlus GUI build\n  MSBuild: {msbuild}\n"
               f"  Configuration: {options.configuration}\n  Output: {output}", flush=True)
-        if not options.dry_run:
-            (ROOT / "LEPInstaller/Resources").mkdir(parents=True, exist_ok=True)
-        for project, platform in PROJECTS:
+        if not options.dryRun:
+            (kScriptRoot / "LEPInstaller/Resources").mkdir(parents=True, exist_ok=True)
+        for project, platform in kProjects:
             command = [str(msbuild), "/nologo", "/nr:false", "/v:minimal",
-                       str(ROOT / project / f"{project}.csproj"), "/t:Build",
+                       str(kScriptRoot / project / f"{project}.csproj"), "/t:Build",
                        f"/p:Configuration={options.configuration}", f"/p:Platform={platform}",
-                       f"/p:SolutionDir={ROOT}{os.sep}"]
+                       f"/p:SolutionDir={kScriptRoot}{os.sep}"]
             print(f"\n[build] {project} ({platform})", flush=True)
-            if options.dry_run:
+            if options.dryRun:
                 print(subprocess.list2cmdline(command), flush=True)
             else:
-                subprocess.run(command, cwd=ROOT, check=True)
-        copy_core(core_dir, output, options.dry_run)
-        status = "Dry run completed" if options.dry_run else "Build succeeded"
+                subprocess.run(command, cwd=kScriptRoot, check=True)
+        copyCore(coreDir, output, options.dryRun)
+        status = "Dry run completed" if options.dryRun else "Build succeeded"
         print(f"\n{status}.\n  Output: {output}", flush=True)
         return 0
     except subprocess.CalledProcessError as error:
