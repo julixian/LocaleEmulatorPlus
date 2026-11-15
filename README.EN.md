@@ -2,6 +2,8 @@
 
 [简体中文](README.md) | English
 
+<img src="img/icon.png" width="128" alt="LocaleEmulatorPlus" />
+
 LocaleEmulatorPlus provides per-application locale, code-page, and time-zone emulation for Windows programs.
 This repository contains the configuration GUI, Explorer context-menu extension, installer, updater, and
 x86/x64 launchers. The native process-injection core is kept in

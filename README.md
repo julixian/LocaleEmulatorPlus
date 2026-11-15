@@ -2,6 +2,8 @@
 
 简体中文 | [English](README.EN.md)
 
+<img src="img/icon.png" width="128" alt="LocaleEmulatorPlus" />
+
 LocaleEmulatorPlus 为 Windows 程序提供按应用配置的区域、代码页和时区模拟。本仓库包含配置 GUI、资源管理器右键菜单扩展、安装器、更新器和 x86/x64 启动器。原生进程注入核心位于
 [LocaleEmulatorPlus-Core](https://github.com/julixian/LocaleEmulatorPlus-Core) 仓库。
 
