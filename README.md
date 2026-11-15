@@ -12,11 +12,11 @@ LocaleEmulatorPlus 为 Windows 程序提供按应用配置的区域、代码页�
 - 根据目标程序架构选择 `LEPProc_x86.exe` 或 `LEPProc_x64.exe`。
 - 配置 GUI 和右键菜单提供多语言资源；右键菜单支持外部 `Lang/*.xml` 覆盖。
 
-![](img/menu_example.png?raw=true)
+<img src="img/menu_example.png" width="520" alt="menu_example" />
 
 PS: 在 Windows on arm 设备上转区 x86 程序需要为 `LEPProc_x86.exe` 和要转区的x86程序开启 `禁用混合执行模式`
 
-![](img/Disable_Mixed_Execution_Mode.png?raw=true)
+<img src="img/Disable_Mixed_Execution_Mode.png" width="450" alt="Disable_Mixed_Execution_Mode" />
 
 ## 仓库结构
 

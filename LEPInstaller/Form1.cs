@@ -28,6 +28,7 @@ namespace LEPInstaller
             DisableDPIScale();
 
             InitializeComponent();
+            Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath);
             cmdMode = CmdMode;
         }
 

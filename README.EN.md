@@ -14,11 +14,11 @@ x86/x64 launchers. The native process-injection core is kept in
 - Select `LEPProc_x86.exe` or `LEPProc_x64.exe` according to the target architecture.
 - Localized GUI and context-menu resources, with external `Lang/*.xml` overrides for the context menu.
 
-![](img/menu_example.png?raw=true)
+<img src="img/menu_example.png" width="520" alt="menu_example" />
 
 PS: 在 Windows on arm 设备上转区 x86 程序需要为 `LEPProc_x86.exe` 和要转区的x86程序开启 `禁用混合执行模式`
 
-![](img/Disable_Mixed_Execution_Mode.png?raw=true)
+<img src="img/Disable_Mixed_Execution_Mode.png" width="450" alt="Disable_Mixed_Execution_Mode" />
 
 ## Repository Layout
 
