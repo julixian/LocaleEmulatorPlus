@@ -1,0 +1,50 @@
+[package]
+namespace = "julixian"
+name = "lep"
+
+[dependencies]
+julixian.lep-common = { path = "../LEPCommon" }
+
+[build]
+default-profile = "release"
+sources = [
+  "ContextMenuInstaller.ixx",
+  "ContextMenuInstaller.cpp",
+  "Cli.ixx",
+  "Cli.cpp",
+  "Gui/Win32Ui.ixx",
+  "Gui/Win32Ui.cpp",
+  "Gui/AppProfileDialog.ixx",
+  "Gui/AppProfileDialog.cpp",
+  "Gui/MainWindow.ixx",
+  "Gui/MainWindow.cpp",
+  "Gui/MainWindow.LaunchTab.cpp",
+  "Gui/MainWindow.ProfilesTab.cpp",
+  "Gui/MainWindow.ShellTab.cpp",
+  "Gui/MainWindow.SettingsTab.cpp",
+]
+module_extensions = [".ixx"]
+include_dirs = ["../LEPCommon"]
+
+[resources]
+files = ["LEP.rc"]
+
+[target.windows.build]
+ldflags = [
+  "-lkernel32",
+  "-luser32",
+  "-lgdi32",
+  "-ladvapi32",
+  "-lshell32",
+  "-lshlwapi",
+  "-lole32",
+  "-luuid",
+  "-lcomctl32",
+  "-lcomdlg32",
+  "-lcrypt32",
+  "-Wl,/SUBSYSTEM:WINDOWS",
+]
+
+[targets.LEP]
+kind = "bin"
+main = "main.cpp"

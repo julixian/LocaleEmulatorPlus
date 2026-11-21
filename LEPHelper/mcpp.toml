@@ -1,0 +1,25 @@
+[package]
+namespace = "julixian"
+name = "lep-helper"
+
+[build]
+default-profile = "release"
+sources = [
+  "../LEPCommon/LocaleEmulatorPlus.ixx",
+]
+module_extensions = [".ixx"]
+include_dirs = ["../LEPCommon"]
+
+[resources]
+files = ["LEPHelper.rc"]
+
+[target.windows.build]
+ldflags = [
+  "-lkernel32",
+  "-luser32",
+  "-Wl,/SUBSYSTEM:WINDOWS",
+]
+
+[targets.LEPHelper_x86]
+kind = "bin"
+main = "main.cpp"

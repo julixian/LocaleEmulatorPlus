@@ -1,0 +1,17 @@
+#pragma once
+
+#define NAMESPACE_BEGIN(name) namespace name {
+#define NAMESPACE_END(name) }
+
+#define LEP_APP_VERSION_MAJOR 3
+#define LEP_APP_VERSION_MINOR 0
+#define LEP_APP_VERSION_PATCH 0
+#define LEP_APP_VERSION_STR "3.0.0"
+#define LEP_APP_VERSION_WSTR L"3.0.0"
+#define LEP_APP_VERSION_4_WSTR L"3.0.0.0"
+
+// 新版原生 IExplorerCommand COM CLSID（与旧版 .NET IContextMenu CLSID 完全隔离）
+#define LEP_SHELL_EXT_CLSID_WSTR L"{A84F3C21-6E9D-4B2A-9F1E-3D7C5B8A2030}"
+#define LEP_SHELL_EXT_CLSID_RAW_WSTR L"A84F3C21-6E9D-4B2A-9F1E-3D7C5B8A2030"
+#define LEP_SPARSE_PACKAGE_NAME_WSTR L"julixian.LocaleEmulatorPlus.ShellExt"
+#define LEP_SPARSE_PUBLISHER_WSTR L"CN=LocaleEmulatorPlus"

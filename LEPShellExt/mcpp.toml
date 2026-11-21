@@ -1,0 +1,34 @@
+[package]
+namespace = "julixian"
+name = "lep-shell-ext"
+
+[dependencies]
+julixian.lep-common = { path = "../LEPCommon" }
+
+[build]
+default-profile = "release"
+sources = [
+  "ExplorerCommand.ixx",
+  "ExplorerCommand.cpp",
+  "DllMain.cpp",
+]
+module_extensions = [".ixx"]
+include_dirs = ["../LEPCommon"]
+
+[resources]
+files = ["LEPShellExt.rc"]
+
+[target.windows.build]
+ldflags = [
+  "-lkernel32",
+  "-luser32",
+  "-ladvapi32",
+  "-lshell32",
+  "-lshlwapi",
+  "-lole32",
+  "-luuid",
+]
+
+[targets.LEPShellExt]
+kind = "shared"
+windows_auto_export = false

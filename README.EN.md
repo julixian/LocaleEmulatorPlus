@@ -4,115 +4,94 @@
 
 <img src="img/icon.png" width="128" alt="LocaleEmulatorPlus" />
 
-LocaleEmulatorPlus provides per-application locale, code-page, and time-zone emulation for Windows programs.
-This repository contains the configuration GUI, Explorer context-menu extension, installer, updater, and
-x86/x64 launchers. The native process-injection core is kept in
-[LocaleEmulatorPlus-Core](https://github.com/julixian/LocaleEmulatorPlus-Core) repository.
+LocaleEmulatorPlus provides per-application locale, code-page, font, and time-zone emulation for Windows programs. Starting with version 3.0.0, it is completely rewritten in **pure native C++23 + Win32** with no .NET runtime dependency, supporting Windows 7 SP1 through Windows 11 (x64). The native process-injection core is maintained in [LocaleEmulatorPlus-Core](https://github.com/julixian/LocaleEmulatorPlus-Core).
+
+This project is derived from the original [Locale Emulator](https://github.com/xupefei/Locale-Emulator) and [Locale Emulator Core](https://github.com/xupefei/Locale-Emulator-Core).
 
 ## Features
 
-- Per-application and global profiles for locale, code pages, fonts, UI language, and time zone.
-- Launch programs through the Explorer context menu.
-- Select `LEPProc_x86.exe` or `LEPProc_x64.exe` according to the target architecture.
-- Localized GUI and context-menu resources, with external `Lang/*.xml` overrides for the context menu.
+- **Pure native, zero runtime dependencies**: Built in C++23 + Win32 with statically linked runtime; no .NET Framework needed. Supports 64-bit Windows 7 SP1 – Windows 11 while launching both x64 and x86 target applications.
+- **Unified `LEP.exe`**: Combines the GUI (Launch, Global Profiles, Context Menu, Settings) and CLI in a single executable.
+- **Windows 11 top-level context menu**: Native `IExplorerCommand` shell extension supporting both classic Explorer menus (Windows 7–10 and Windows 11 "Show more options") and the modern Windows 11 top-level menu via an MSIX Sparse Package.
+- **Clear per-application profile workflow**:
+  - When no app profile exists, the context menu shows only "Create a profile for this app..."; once created, it dynamically switches to "Run with this app's profile" and "Edit this app's profile...".
+  - The profile editor cleanly separates **Save**, **Save & Run**, and **Create Shortcut** — saving never unexpectedly launches the target.
+  - When the target lives in a read-only location (e.g. mounted ISO, optical disc, protected folder), LEP prompts to fall back to saving the app profile inside global `config.toml`.
+- **TOML configuration**: Human-readable `config.toml` and `<app>.lep.toml`, with built-in Simplified Chinese, English, and Japanese localizations (`locales/*.toml`).
+- **Microsoft Store ready**: Automatically detects MSIX packaged execution and stores user config under `%LOCALAPPDATA%\LocaleEmulatorPlus\config.toml`, with Store manifest `packaging/AppxManifest.store.xml`.
 
 <img src="img/menu_example.png" width="520" alt="menu_example" />
 
-PS: 在 Windows on arm 设备上转区 x86 程序需要为 `LEPProc_x86.exe` 和要转区的x86程序开启 `禁用混合执行模式`
+> **Note (Windows on ARM)**: When running x86 applications under locale emulation on Windows on ARM, enable "Disable hybrid execution mode" (`禁用混合执行模式`) for both `LEPHelper_x86.exe` and the target x86 executable.
 
 <img src="img/Disable_Mixed_Execution_Mode.png" width="450" alt="Disable_Mixed_Execution_Mode" />
 
-## Repository Layout
+## CLI Usage
 
-- `LEPCommonLibrary/` shared profile, PE-type, and helper code.
-- `LEPGUI/` WPF profile editor.
-- `LEPProc/` command-line/context-menu launcher.
-- `LEPContextMenuHandler/` Explorer context-menu COM shell extension.
-- `LEPInstaller/` installer/uninstaller for the context-menu shell extension.
-- `LEPUpdater/` updater.
-- `Build/Release/` default build output.
+```powershell
+# Launch an application with a named global profile
+LEP.exe run --profile "Run in Japanese" "C:\Games\App.exe" --arg1
 
-Native core DLLs are optional for the GUI build. By default, the build script looks for an adjacent
-core checkout:
+# Launch using the application's own .lep.toml or global fallback profile
+LEP.exe run "C:\Games\App.exe"
 
-```text
-..\LocaleEmulatorPlus-Core\out\x86
-..\LocaleEmulatorPlus-Core\out\x64
+# Open the per-application profile editor
+LEP.exe edit "C:\Games\App.exe"
+
+# Create a desktop/folder shortcut launching via LEP
+LEP.exe shortcut "C:\Games\App.exe" --profile "Run in Japanese"
+
+# List global profiles
+LEP.exe list-profiles
+
+# Install / uninstall Explorer context menu (default: classic current-user; --all-users for all users, --win11 for Win11 sparse menu)
+LEP.exe install
+LEP.exe uninstall
 ```
 
-Use `--core-dir` or set `CORE_DIR` to another `LocaleEmulatorPlus-Core` checkout when
-needed. See the Core repository documentation for native core build details.
+## Repository Layout
 
-## Runtime
-
-The GUI, installer, launcher, and Explorer context-menu handler target .NET Framework 4.8.
-On Windows 7/8/8.1, install the .NET Framework 4.8 Runtime before using LEP, otherwise the
-Explorer context menu may fail to appear or load correctly. Windows XP is not supported.
-
-https://dotnet.microsoft.com/zh-cn/download/dotnet-framework/net48
+- `LEPCommon/`: Shared C++23 modules (TOML configuration, system locale/timezone enumeration, i18n, shortcuts, launcher).
+- `LEP/`: Main `LEP.exe` (Win32 GUI, CLI, context-menu & Win11 sparse-package installer).
+- `LEPShellExt/`: Native COM `IExplorerCommand` shell extension (`LEPShellExt.dll`).
+- `LEPHelper/`: Minimal 32-bit launch bridge (`LEPHelper_x86.exe`) to invoke `LoaderDll_x86.dll` for x86 targets.
+- `assets/`: Application icon, manifest, and `locales/*.toml` translations.
+- `packaging/`: Win11 sparse package (`AppxManifest.sparse.xml`) and Microsoft Store (`AppxManifest.store.xml`) manifests and visual assets.
 
 ## Build
 
 Requirements:
 
-- Python 3.10+; no third-party Python packages are required.
-- Visual Studio with MSBuild and .NET Framework 4.8 targeting pack.
-- Optional prebuilt native core DLLs if you want the output folder to be directly runnable.
+- Windows x64, Python 3.10+
+- [mcpp](https://github.com/mcpp-community/mcpp) (manages `llvm@23.1.3` and `julixian.tomlkitpp`)
+- Visual Studio with MSVC v143 (`14.44`) sysroot and Windows 10/11 SDK (`makeappx.exe`, `signtool.exe`)
+- Prebuilt [LocaleEmulatorPlus-Core](https://github.com/julixian/LocaleEmulatorPlus-Core) DLLs in `../LocaleEmulatorPlus-Core/out/{x86,x64}` (or pass `--core-dir` / `CORE_DIR`)
 
-Build this GUI repository:
-
-```powershell
-python .\build.py
-```
+Build commands:
 
 ```powershell
-python .\build.py --configuration Debug
-python .\build.py --core-dir D:\VSProj\LocaleEmulatorPlus-Core
-python .\build.py --msbuild 'C:\Path\To\MSBuild.exe'
-python .\build.py --dry-run
+# Build release and portable zip
+python .\build.py --profile release --zip
+
+# Also build full Microsoft Store MSIX package
+python .\build.py --profile release --store-msix --zip
+
+# Fast development build (no LTO, skip sparse MSIX)
+python .\build.py --profile fast-release --skip-sparse
 ```
 
-Release is the default configuration. MSBuild is discovered through `vswhere` or PATH.
-`CONFIGURATION`, `CORE_DIR`, and `MSBUILD` environment variables are also supported; explicit
-arguments take precedence. `--dry-run` prints commands and copy operations without building.
-Any failed step returns a nonzero exit code immediately. Both launcher architectures are built;
-the script does not run the installer or deploy to an installed application directory.
+Output directory `out/dist/` contains:
 
-The output is written to:
-
-```text
-Build\Release
-```
-
-Expected managed output files include:
-
-- `LEPGUI.exe`
-- `LEPInstaller.exe`
-- `LEPUpdater.exe`
-- `LEPProc_x86.exe`
-- `LEPProc_x64.exe`
-- `LEPContextMenuHandler.dll`
-- `LEPCommonLibrary.dll`
-- `LEPVersion.xml`
-- `Lang/`
-
-Optional native core files are copied when present:
-
-- `LoaderDll_x86.dll`
-- `LoaderDll_x64.dll`
-- `LocaleEmulatorPlus_x86.dll`
-- `LocaleEmulatorPlus_x64.dll`
-
-## Notes For Maintainers
-
-`LEPProc` builds x86 and x64 executables and explicitly references the AnyCPU configuration of
-`LEPCommonLibrary`. The installer embeds the common library and context-menu DLL, so those
-components are built first. All managed projects target .NET Framework 4.8.
+- `LEP.exe`
+- `LEPShellExt.dll`
+- `LEPHelper_x86.exe`
+- `LEPShellExt.msix` / `LEPShellExt.cer` (Win11 top-level menu sparse package & certificate)
+- `locales/`
+- `LoaderDll_x86.dll`, `LoaderDll_x64.dll`, `LocaleEmulatorPlus_x86.dll`, `LocaleEmulatorPlus_x64.dll` (when Core output is present)
 
 ## License
 
-This fork inherits source from Locale Emulator. See `README_ORG.md` for the original upstream
-license notice and third-party attribution.
+Licensed under the [GNU General Public License v3.0](LICENSE.txt) (`GPL-3.0-or-later`).
 
 ## Buy me a coffee
 

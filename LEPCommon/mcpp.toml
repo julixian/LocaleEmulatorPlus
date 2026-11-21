@@ -1,0 +1,30 @@
+[package]
+namespace = "julixian"
+name = "lep-common"
+
+[dependencies]
+julixian.tomlkitpp = "1.0.2"
+
+[build]
+default-profile = "release"
+sources = [
+  "LEPCommon.ixx",
+  "LocaleEmulatorPlus.ixx",
+  "StringUtils.ixx",
+  "StringUtils.cpp",
+  "SystemInfo.ixx",
+  "SystemInfo.cpp",
+  "Config.ixx",
+  "Config.cpp",
+  "I18n.ixx",
+  "I18n.cpp",
+  "Shortcut.ixx",
+  "Shortcut.cpp",
+  "Launcher.ixx",
+  "Launcher.cpp",
+]
+module_extensions = [".ixx"]
+include_dirs = ["."]
+
+[targets.lep-common]
+kind = "lib"
