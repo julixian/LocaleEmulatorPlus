@@ -455,10 +455,17 @@ std::expected<void, std::wstring> installWin11SparsePackage(const fs::path& appD
     const std::wstring script = std::format(
         L"$ErrorActionPreference='Stop'; "
         L"Get-AppxPackage -Name '{}' -ErrorAction SilentlyContinue | Remove-AppxPackage -ErrorAction SilentlyContinue; "
-        L"Add-AppxPackage -Path '{}' -ExternalLocation '{}' -ForceApplicationShutdown",
+        L"Add-AppxPackage -Path '{}' -ExternalLocation '{}' -ForceApplicationShutdown; "
+        L"$pkg = Get-AppxPackage -Name '{}' -ErrorAction SilentlyContinue | Select-Object -First 1; "
+        L"if ($pkg -and (Test-Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\ContextMenu\\Preferences\\extensions')) {{ "
+        L"  $p = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\ContextMenu\\Preferences\\extensions\\' + $pkg.PackageFamilyName; "
+        L"  New-Item -Path $p -Force | Out-Null; "
+        L"  New-ItemProperty -Path $p -Name 'Enabled' -PropertyType DWord -Value 1 -Force | Out-Null; "
+        L"}}",
         escapePowerShellSingleQuoted(LEP_SPARSE_PACKAGE_NAME_WSTR),
         escapePowerShellSingleQuoted(msixPath.wstring()),
-        escapePowerShellSingleQuoted(appDir.wstring()));
+        escapePowerShellSingleQuoted(appDir.wstring()),
+        escapePowerShellSingleQuoted(LEP_SPARSE_PACKAGE_NAME_WSTR));
 
     if (auto res = runPowerShellHidden(script); !res) {
         return res;
@@ -476,7 +483,12 @@ std::expected<void, std::wstring> uninstallWin11SparsePackage(const fs::path& ap
 
     const std::wstring script = std::format(
         L"$ErrorActionPreference='Stop'; "
-        L"Get-AppxPackage -Name '{}' -ErrorAction SilentlyContinue | Remove-AppxPackage",
+        L"$pkgs = Get-AppxPackage -Name '{}' -ErrorAction SilentlyContinue; "
+        L"foreach ($pkg in $pkgs) {{ "
+        L"  $p = 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\ContextMenu\\Preferences\\extensions\\' + $pkg.PackageFamilyName; "
+        L"  if (Test-Path $p) {{ Remove-Item -Path $p -Recurse -Force -ErrorAction SilentlyContinue; }} "
+        L"}}; "
+        L"$pkgs | Remove-AppxPackage",
         escapePowerShellSingleQuoted(LEP_SPARSE_PACKAGE_NAME_WSTR));
 
     if (auto res = runPowerShellHidden(script); !res) {

@@ -107,9 +107,11 @@ def ensureSelfSignedCert(signingDir: Path, dryRun: bool) -> tuple[Path, Path, st
 def buildSparsePackage(distDir: Path, sdkRoot: Path, sdkVersion: str,
                        pfxOpt: Path | None, pfxPassword: str, dryRun: bool) -> None:
     makeappx = findSdkTool(sdkRoot, sdkVersion, "makeappx.exe")
+    makepri = findSdkTool(sdkRoot, sdkVersion, "makepri.exe")
     signtool = findSdkTool(sdkRoot, sdkVersion, "signtool.exe")
 
     stageDir = kScriptRoot / "out" / "sparse-stage"
+    priConfig = kScriptRoot / "out" / "sparse-priconfig.xml"
     msixOut = distDir / "LEPShellExt.msix"
     cerOut = distDir / "LEPShellExt.cer"
 
@@ -120,6 +122,17 @@ def buildSparsePackage(distDir: Path, sdkRoot: Path, sdkVersion: str,
         shutil.copy2(kScriptRoot / "packaging" / "AppxManifest.sparse.xml", stageDir / "AppxManifest.xml")
         for png in (kScriptRoot / "packaging" / "Assets").glob("*.png"):
             shutil.copy2(png, stageDir / "Assets" / png.name)
+
+    runCommand([str(makepri), "createconfig", "/cf", str(priConfig), "/dq", "en-US", "/o"],
+               kScriptRoot, dryRun)
+    runCommand([
+        str(makepri), "new",
+        "/pr", str(stageDir),
+        "/cf", str(priConfig),
+        "/mn", str(stageDir / "AppxManifest.xml"),
+        "/of", str(stageDir / "resources.pri"),
+        "/o",
+    ], kScriptRoot, dryRun)
 
     runCommand([str(makeappx), "pack", "/d", str(stageDir), "/p", str(msixOut), "/nv", "/o"],
                kScriptRoot, dryRun)
@@ -239,6 +252,8 @@ def main(argv: list[str] | None = None) -> int:
                 shutil.copy2(findBuiltArtifact(targetRoot, "x86_64-windows-msvc", "LEPShellExt.dll"), distDir / "LEPShellExt.dll")
                 shutil.copy2(findBuiltArtifact(targetRoot, "i686-windows-msvc", "LEPHelper_x86.exe"), distDir / "LEPHelper_x86.exe")
                 shutil.copytree(kScriptRoot / "assets" / "locales", distDir / "locales")
+                # 稀疏包通过 ExternalLocation 指向本目录，Windows 11 设置页会从 PackageRootFolder\Assets 加载图标
+                shutil.copytree(kScriptRoot / "packaging" / "Assets", distDir / "Assets")
 
             copyCoreDlls(options.coreDir.resolve(), distDir, options.dryRun)
 
