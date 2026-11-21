@@ -1,0 +1,133 @@
+<Page
+    x:Class="LEPWinUI.Pages.ProfilesPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock x:Name="PageTitleText" Grid.Row="0" Style="{StaticResource PageTitleTextStyle}" Margin="0" />
+        <InfoBar x:Name="FeedbackBar" Grid.Row="1" IsOpen="False" IsClosable="True" />
+
+        <Grid Grid.Row="2" ColumnSpacing="16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="250" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- 左侧：全局配置列表 + 全局保存的程序专属配置 -->
+            <Grid Grid.Column="0" RowSpacing="12">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="0" Style="{StaticResource CardBorderStyle}" Padding="12">
+                    <Grid RowSpacing="8">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock x:Name="GlobalListHeader" Grid.Row="0" FontWeight="SemiBold" />
+                        <ListView
+                            x:Name="ProfilesList"
+                            Grid.Row="1"
+                            SelectionMode="Single"
+                            SelectionChanged="ProfilesList_SelectionChanged" />
+                        <Grid Grid.Row="2" ColumnSpacing="6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Button x:Name="AddBtn" Grid.Column="0" HorizontalAlignment="Stretch" Click="AddBtn_Click" />
+                            <Button x:Name="DupBtn" Grid.Column="1" HorizontalAlignment="Stretch" Click="DupBtn_Click" />
+                            <Button x:Name="DelBtn" Grid.Column="2" HorizontalAlignment="Stretch" Click="DelBtn_Click" />
+                        </Grid>
+                        <Grid Grid.Row="3" ColumnSpacing="6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Button x:Name="UpBtn" Grid.Column="0" HorizontalAlignment="Stretch" Click="UpBtn_Click" />
+                            <Button x:Name="DownBtn" Grid.Column="1" HorizontalAlignment="Stretch" Click="DownBtn_Click" />
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}" Padding="12">
+                    <StackPanel Spacing="8">
+                        <TextBlock x:Name="AppListHeader" FontWeight="SemiBold" />
+                        <ListView x:Name="GlobalAppsList" Height="110" SelectionMode="Single" DoubleTapped="GlobalAppsList_DoubleTapped" />
+                        <Grid ColumnSpacing="6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Button x:Name="EditAppBtn" Grid.Column="0" HorizontalAlignment="Stretch" Click="EditAppBtn_Click" />
+                            <Button x:Name="RemoveAppBtn" Grid.Column="1" HorizontalAlignment="Stretch" Click="RemoveAppBtn_Click" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- 右侧：配置编辑表单 -->
+            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+                <Border Style="{StaticResource CardBorderStyle}">
+                    <StackPanel Spacing="12">
+                        <TextBox x:Name="NameBox" />
+
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <ComboBox x:Name="LocaleCombo" Grid.Column="0" HorizontalAlignment="Stretch" />
+                            <ComboBox x:Name="TimezoneCombo" Grid.Column="1" HorizontalAlignment="Stretch" />
+                        </Grid>
+
+                        <ComboBox x:Name="RegModeCombo" HorizontalAlignment="Stretch" />
+                        <ComboBox x:Name="UiModeCombo" HorizontalAlignment="Stretch" />
+
+                        <TextBox x:Name="ArgsBox" />
+
+                        <!-- 标准时区名覆盖 & 夏令时名覆盖 绝对等宽 -->
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="StdOverrideBox" Grid.Column="0" />
+                            <TextBox x:Name="DstOverrideBox" Grid.Column="1" />
+                        </Grid>
+
+                        <Grid ColumnSpacing="16" Margin="0,4,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <ToggleSwitch x:Name="ShowInMenuToggle" Grid.Column="0" />
+                            <ToggleSwitch x:Name="RunAsAdminToggle" Grid.Column="1" />
+                            <ToggleSwitch x:Name="RunSuspendedToggle" Grid.Column="2" />
+                        </Grid>
+
+                        <Button
+                            x:Name="SaveBtn"
+                            Style="{StaticResource AccentButtonStyle}"
+                            MinWidth="140"
+                            Height="36"
+                            Margin="0,8,0,0"
+                            Click="SaveBtn_Click" />
+                    </StackPanel>
+                </Border>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</Page>

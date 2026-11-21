@@ -61,10 +61,17 @@ namespace
         return result;
     }
 
-    void launchLepExe(const fs::path& appDir, const std::wstring& arguments)
+    void launchLepExe(const fs::path& appDir, const std::wstring& arguments, const bool preferUiHost = false)
     {
-        const fs::path lepExe = appDir / L"LEP.exe";
-        std::wstring cmdLine = quoteCommandLineArg(lepExe.wstring());
+        fs::path targetExe = appDir / L"LEP.exe";
+        if (preferUiHost) {
+            std::error_code ec;
+            const fs::path winUiExe = appDir / L"LEPWinUI.exe";
+            if (fs::is_regular_file(winUiExe, ec)) {
+                targetExe = winUiExe;
+            }
+        }
+        std::wstring cmdLine = quoteCommandLineArg(targetExe.wstring());
         if (!arguments.empty()) {
             cmdLine += L" " + arguments;
         }
@@ -73,7 +80,7 @@ namespace
         si.cb = sizeof(si);
         PROCESS_INFORMATION pi{};
         if (CreateProcessW(
-                lepExe.c_str(),
+                targetExe.c_str(),
                 cmdLine.data(),
                 nullptr, nullptr, FALSE,
                 0, nullptr,
@@ -84,7 +91,7 @@ namespace
             CloseHandle(pi.hProcess);
         }
         else {
-            ShellExecuteW(nullptr, L"open", lepExe.c_str(), arguments.c_str(), appDir.c_str(), SW_SHOWNORMAL);
+            ShellExecuteW(nullptr, L"open", targetExe.c_str(), arguments.c_str(), appDir.c_str(), SW_SHOWNORMAL);
         }
     }
 
@@ -222,18 +229,18 @@ namespace
 
             case SubAction::ManageAppProfile:
                 if (!target.empty()) {
-                    launchLepExe(m_appDir, std::format(L"manage {}", quoteCommandLineArg(target.wstring())));
+                    launchLepExe(m_appDir, std::format(L"manage {}", quoteCommandLineArg(target.wstring())), true);
                 }
                 break;
 
             case SubAction::ShortcutUi:
                 if (!target.empty()) {
-                    launchLepExe(m_appDir, std::format(L"shortcut-ui {}", quoteCommandLineArg(target.wstring())));
+                    launchLepExe(m_appDir, std::format(L"shortcut-ui {}", quoteCommandLineArg(target.wstring())), true);
                 }
                 break;
 
             case SubAction::OpenGlobalManager:
-                launchLepExe(m_appDir, L"");
+                launchLepExe(m_appDir, L"", true);
                 break;
 
             case SubAction::Separator:

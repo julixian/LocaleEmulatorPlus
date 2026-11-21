@@ -52,7 +52,8 @@ LEP.exe uninstall
 ## Repository Layout
 
 - `LEPCommon/`: Shared C++23 modules (TOML configuration, system locale/timezone enumeration, i18n, shortcuts, launcher).
-- `LEP/`: Main `LEP.exe` (Win32 GUI, CLI, context-menu & Win11 sparse-package installer).
+- `LEP/`: Main `LEP.exe` (Win32 GUI, CLI, GitHub Releases update check, context-menu & Win11 sparse-package installer).
+- `LEPWinUI/`: Fluent 2 UI for Microsoft Store (WinUI 3 + Mica, `LEPWinUI.exe`), reusing native `LEP.exe`, `LEPShellExt.dll`, and Core DLLs.
 - `LEPShellExt/`: Native COM `IExplorerCommand` shell extension (`LEPShellExt.dll`).
 - `LEPHelper/`: Minimal 32-bit launch bridge (`LEPHelper_x86.exe`) to invoke `LoaderDll_x86.dll` for x86 targets.
 - `assets/`: Application icon, manifest, and `locales/*.toml` translations.
@@ -65,6 +66,7 @@ Requirements:
 - Windows x64, Python 3.10+
 - [mcpp](https://github.com/mcpp-community/mcpp) (manages `llvm@23.1.3` and `julixian.tomlkitpp`)
 - Visual Studio with MSVC v143 (`14.44`) sysroot and Windows 10/11 SDK (`makeappx.exe`, `signtool.exe`)
+- .NET 10 SDK (only required when building the Microsoft Store WinUI 3 Fluent package via `--store-msix`)
 - Prebuilt [LocaleEmulatorPlus-Core](https://github.com/julixian/LocaleEmulatorPlus-Core) DLLs in `../LocaleEmulatorPlus-Core/out/{x86,x64}` (or pass `--core-dir` / `CORE_DIR`)
 
 Build commands:

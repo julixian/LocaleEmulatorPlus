@@ -1,0 +1,55 @@
+<Page
+    x:Class="LEPWinUI.Pages.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="16" MaxWidth="920" HorizontalAlignment="Stretch">
+            <TextBlock x:Name="PageTitleText" Style="{StaticResource PageTitleTextStyle}" Margin="0" />
+
+            <!-- 语言与版本卡片 -->
+            <Border Style="{StaticResource CardBorderStyle}">
+                <StackPanel Spacing="12">
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="260" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ComboBox
+                            x:Name="LanguageCombo"
+                            Grid.Column="0"
+                            HorizontalAlignment="Stretch"
+                            SelectionChanged="LanguageCombo_SelectionChanged" />
+                        <TextBlock
+                            x:Name="LangHintText"
+                            Grid.Column="1"
+                            VerticalAlignment="Bottom"
+                            Margin="0,0,0,6"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal" Spacing="24">
+                        <TextBlock x:Name="VersionText" FontWeight="SemiBold" />
+                        <TextBlock x:Name="ModeText" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+
+                    <TextBox x:Name="ConfigPathBox" IsReadOnly="True" FontFamily="Consolas" />
+
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button x:Name="OpenConfigDirBtn" Click="OpenConfigDirBtn_Click" />
+                        <Button x:Name="OpenLogDirBtn" Click="OpenLogDirBtn_Click" />
+                        <Button x:Name="OpenAppDirBtn" Click="OpenAppDirBtn_Click" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- 核心组件自检卡片 -->
+            <Border Style="{StaticResource CardBorderStyle}">
+                <StackPanel Spacing="8">
+                    <TextBlock x:Name="CoreHeaderText" Style="{StaticResource SectionHeaderTextStyle}" Margin="0,0,0,4" />
+                    <StackPanel x:Name="CoreStatusList" Spacing="6" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

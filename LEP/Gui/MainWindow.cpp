@@ -260,6 +260,10 @@ LRESULT MainWindow::handleMessage(const UINT msg, const WPARAM wParam, const LPA
         break;
     }
 
+    case kMsgUpdateCheckDone:
+        handleUpdateCheckDone(lParam);
+        return 0;
+
     case WM_CLOSE:
         DestroyWindow(m_hwnd);
         return 0;

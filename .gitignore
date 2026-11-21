@@ -16,7 +16,8 @@ Thumbs.db
 *.cer
 target/
 out/
-Build/
+bin/
+obj/
 .mcpp/
 .vs/
 __pycache__/

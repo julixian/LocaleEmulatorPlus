@@ -1,0 +1,84 @@
+<Window
+    x:Class="LEPWinUI.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid
+        x:Name="RootGrid"
+        AllowDrop="True"
+        DragOver="RootGrid_DragOver"
+        Drop="RootGrid_Drop">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="44" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Fluent 2 自定义标题栏 -->
+        <Grid
+            x:Name="AppTitleBar"
+            Grid.Row="0"
+            Padding="14,0,0,0"
+            Background="Transparent">
+            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <Image
+                    Source="ms-appx:///Assets/Square44x44Logo.png"
+                    Width="20"
+                    Height="20" />
+                <TextBlock
+                    x:Name="TitleBarText"
+                    Text="Locale Emulator Plus"
+                    FontSize="13"
+                    FontWeight="SemiBold"
+                    VerticalAlignment="Center" />
+                <Border
+                    Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                    CornerRadius="4"
+                    Padding="6,2"
+                    VerticalAlignment="Center">
+                    <TextBlock
+                        x:Name="VersionBadgeText"
+                        Text="v3.0.0"
+                        FontSize="11"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                </Border>
+            </StackPanel>
+        </Grid>
+
+        <!-- 左侧导航 + 页面内容 -->
+        <NavigationView
+            x:Name="NavView"
+            Grid.Row="1"
+            PaneDisplayMode="Left"
+            OpenPaneLength="196"
+            IsBackButtonVisible="Collapsed"
+            IsSettingsVisible="False"
+            SelectionChanged="NavView_SelectionChanged">
+            <NavigationView.MenuItems>
+                <NavigationViewItem x:Name="NavLaunchItem" Tag="launch" Content="启动与快捷方式">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE768;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Name="NavProfilesItem" Tag="profiles" Content="配置管理">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE71D;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Name="NavShellItem" Tag="shell" Content="右键菜单">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE8B7;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
+            <NavigationView.FooterMenuItems>
+                <NavigationViewItem x:Name="NavSettingsItem" Tag="settings" Content="设置与关于">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE713;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.FooterMenuItems>
+
+            <Frame x:Name="ContentFrame" Padding="24,16,24,20" />
+        </NavigationView>
+    </Grid>
+</Window>

@@ -38,6 +38,8 @@ def parseOptions(argv: list[str] | None = None) -> argparse.Namespace:
                         help="Password for --pfx (empty for auto-generated dev cert)")
     parser.add_argument("--skip-sparse", dest="skipSparse", action="store_true",
                         help="Skip building Win11 LEPShellExt.msix sparse package")
+    parser.add_argument("--skip-native", dest="skipNative", action="store_true",
+                        help="Reuse existing out/dist native binaries (useful when iterating on LEPWinUI)")
     parser.add_argument("--store-msix", dest="storeMsix", action="store_true",
                         help="Also build full Microsoft Store MSIX package from packaging/AppxManifest.store.xml")
     parser.add_argument("--zip", dest="makeZip", action="store_true",
@@ -141,13 +143,38 @@ def buildSparsePackage(distDir: Path, sdkRoot: Path, sdkVersion: str,
 
 def buildStorePackage(distDir: Path, sdkRoot: Path, sdkVersion: str, dryRun: bool) -> None:
     makeappx = findSdkTool(sdkRoot, sdkVersion, "makeappx.exe")
+    winuiProj = kScriptRoot / "LEPWinUI" / "LEPWinUI.csproj"
+    winuiOut = kScriptRoot / "out" / "winui-publish"
     stageDir = kScriptRoot / "out" / "store-stage"
     msixOut = kScriptRoot / "out" / f"LocaleEmulatorPlus-{kVersion}-x64.msix"
+
+    if not dryRun and winuiOut.exists():
+        shutil.rmtree(winuiOut)
+
+    runCommand([
+        "dotnet", "publish", str(winuiProj),
+        "-c", "Release",
+        "-r", "win-x64",
+        "-p:Platform=x64",
+        "-o", str(winuiOut),
+    ], kScriptRoot, dryRun)
 
     if not dryRun:
         if stageDir.exists():
             shutil.rmtree(stageDir)
-        shutil.copytree(distDir, stageDir, ignore=shutil.ignore_patterns("LEPShellExt.msix", "LEPShellExt.cer"))
+        shutil.copytree(winuiOut, stageDir, ignore=shutil.ignore_patterns("*.pdb"))
+        # 合并原生 C++ 引擎（LEP.exe / LEPShellExt.dll / LEPHelper_x86.exe / Core DLL / locales）
+        for item in distDir.iterdir():
+            if item.name in ("LEPShellExt.msix", "LEPShellExt.cer"):
+                continue
+            dst = stageDir / item.name
+            if item.is_dir():
+                if dst.exists():
+                    shutil.rmtree(dst)
+                shutil.copytree(item, dst)
+            else:
+                shutil.copy2(item, dst)
+
         (stageDir / "Assets").mkdir(parents=True, exist_ok=True)
         shutil.copy2(kScriptRoot / "packaging" / "AppxManifest.store.xml", stageDir / "AppxManifest.xml")
         for png in (kScriptRoot / "packaging" / "Assets").glob("*.png"):
@@ -191,32 +218,33 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     try:
-        print(f"=== Building LocaleEmulatorPlus {kVersion} ({options.profile}) ===", flush=True)
-        runCommand(["mcpp", "build", "-p", "lep", "--profile", options.profile, "--static"],
-                   kScriptRoot, options.dryRun)
-        runCommand(["mcpp", "build", "-p", "lep-shell-ext", "--profile", options.profile, "--static"],
-                   kScriptRoot, options.dryRun)
-        runCommand(["mcpp", "build", "-p", "lep-helper", "--target", "i686-windows-msvc",
-                    "--profile", options.profile, "--static"],
-                   kScriptRoot, options.dryRun)
-
         distDir = kScriptRoot / "out" / "dist"
-        if not options.dryRun:
-            if distDir.exists():
-                shutil.rmtree(distDir)
-            distDir.mkdir(parents=True, exist_ok=True)
+        if not options.skipNative:
+            print(f"=== Building LocaleEmulatorPlus {kVersion} ({options.profile}) ===", flush=True)
+            runCommand(["mcpp", "build", "-p", "lep", "--profile", options.profile, "--static"],
+                       kScriptRoot, options.dryRun)
+            runCommand(["mcpp", "build", "-p", "lep-shell-ext", "--profile", options.profile, "--static"],
+                       kScriptRoot, options.dryRun)
+            runCommand(["mcpp", "build", "-p", "lep-helper", "--target", "i686-windows-msvc",
+                        "--profile", options.profile, "--static"],
+                       kScriptRoot, options.dryRun)
 
-            targetRoot = kScriptRoot / "target"
-            shutil.copy2(findBuiltArtifact(targetRoot, "x86_64-windows-msvc", "LEP.exe"), distDir / "LEP.exe")
-            shutil.copy2(findBuiltArtifact(targetRoot, "x86_64-windows-msvc", "LEPShellExt.dll"), distDir / "LEPShellExt.dll")
-            shutil.copy2(findBuiltArtifact(targetRoot, "i686-windows-msvc", "LEPHelper_x86.exe"), distDir / "LEPHelper_x86.exe")
-            shutil.copytree(kScriptRoot / "assets" / "locales", distDir / "locales")
+            if not options.dryRun:
+                if distDir.exists():
+                    shutil.rmtree(distDir)
+                distDir.mkdir(parents=True, exist_ok=True)
 
-        copyCoreDlls(options.coreDir.resolve(), distDir, options.dryRun)
+                targetRoot = kScriptRoot / "target"
+                shutil.copy2(findBuiltArtifact(targetRoot, "x86_64-windows-msvc", "LEP.exe"), distDir / "LEP.exe")
+                shutil.copy2(findBuiltArtifact(targetRoot, "x86_64-windows-msvc", "LEPShellExt.dll"), distDir / "LEPShellExt.dll")
+                shutil.copy2(findBuiltArtifact(targetRoot, "i686-windows-msvc", "LEPHelper_x86.exe"), distDir / "LEPHelper_x86.exe")
+                shutil.copytree(kScriptRoot / "assets" / "locales", distDir / "locales")
 
-        if not options.skipSparse:
-            buildSparsePackage(distDir, options.sdkRoot, options.sdkVersion,
-                               options.pfx, options.pfxPassword, options.dryRun)
+            copyCoreDlls(options.coreDir.resolve(), distDir, options.dryRun)
+
+            if not options.skipSparse:
+                buildSparsePackage(distDir, options.sdkRoot, options.sdkVersion,
+                                   options.pfx, options.pfxPassword, options.dryRun)
 
         if options.storeMsix:
             buildStorePackage(distDir, options.sdkRoot, options.sdkVersion, options.dryRun)

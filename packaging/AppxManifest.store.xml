@@ -15,8 +15,8 @@
   IgnorableNamespaces="uap uap10 rescap desktop4 desktop5 com">
 
   <Identity
-    Name="REPLACE-WITH-PARTNER-CENTER-PACKAGE-NAME"
-    Publisher="CN=REPLACE-WITH-PARTNER-CENTER-PUBLISHER-ID"
+    Name="julixian.LocaleEmulatorPlus"
+    Publisher="CN=93DB9627-2815-49E1-8B58-A7EB2CCC8220"
     Version="3.0.0.0"
     ProcessorArchitecture="x64" />
 
@@ -37,7 +37,7 @@
   </Resources>
 
   <Applications>
-    <Application Id="LEP" Executable="LEP.exe" EntryPoint="Windows.FullTrustApplication">
+    <Application Id="LEP" Executable="LEPWinUI.exe" EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
         DisplayName="Locale Emulator Plus"
         Description="Locale emulation launcher and profile manager for Windows applications."

@@ -122,6 +122,13 @@ core_missing = "Missing"
 open_config_dir = "Open Config Folder"
 open_log_dir = "Open Log Folder"
 open_app_dir = "Open App Folder"
+check_update = "Check for Updates"
+update_checking = "Checking GitHub Releases..."
+update_latest = "You are already on the latest version"
+update_failed = "Update check failed"
+update_found_status = "Update available"
+update_found_prefix = "New version available:"
+update_open_prompt = "Open the GitHub Releases page now?"
 
 [context_menu]
 root_title = "Locale Emulator Plus"

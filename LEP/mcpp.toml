@@ -10,6 +10,8 @@ default-profile = "release"
 sources = [
   "ContextMenuInstaller.ixx",
   "ContextMenuInstaller.cpp",
+  "Updater.ixx",
+  "Updater.cpp",
   "Cli.ixx",
   "Cli.cpp",
   "Gui/Win32Ui.ixx",
@@ -42,6 +44,7 @@ ldflags = [
   "-lcomctl32",
   "-lcomdlg32",
   "-lcrypt32",
+  "-lwinhttp",
   "-Wl,/SUBSYSTEM:WINDOWS",
 ]
 

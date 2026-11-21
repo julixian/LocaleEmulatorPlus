@@ -52,7 +52,8 @@ LEP.exe uninstall
 ## 仓库结构
 
 - `LEPCommon/`：共享 C++23 模块（TOML 配置读写、系统区域/时区枚举、多语言、快捷方式、进程启动器）。
-- `LEP/`：主程序 `LEP.exe`（Win32 图形界面、CLI、右键菜单安装与稀疏包注册）。
+- `LEP/`：主程序 `LEP.exe`（Win32 图形界面、CLI、GitHub Release 更新检查、右键菜单安装与稀疏包注册）。
+- `LEPWinUI/`：面向 Microsoft Store 的 Fluent 2 界面（WinUI 3 + Mica，`LEPWinUI.exe`，底层复用原生 `LEP.exe` / `LEPShellExt.dll` / Core DLL）。
 - `LEPShellExt/`：原生 COM `IExplorerCommand` 右键菜单扩展 `LEPShellExt.dll`。
 - `LEPHelper/`：轻量 32 位启动桥接器 `LEPHelper_x86.exe`（用于加载 `LoaderDll_x86.dll` 启动 32 位目标程序）。
 - `assets/`：程序图标、清单与 `locales/*.toml` 语言文件。
@@ -65,6 +66,7 @@ LEP.exe uninstall
 - Windows x64，Python 3.10+
 - [mcpp](https://github.com/mcpp-community/mcpp)（自动拉取 `llvm@23.1.3` 工具链与 `julixian.tomlkitpp` 依赖）
 - Visual Studio（提供 MSVC v143 / 14.44 sysroot 与 Windows 10/11 SDK，含 `makeappx.exe`、`signtool.exe`）
+- .NET 10 SDK（仅构建 Microsoft Store WinUI 3 Fluent 版 `--store-msix` 需要）
 - 相邻目录的 [LocaleEmulatorPlus-Core](https://github.com/julixian/LocaleEmulatorPlus-Core) 构建输出（`out/x86` 与 `out/x64`），也可通过 `--core-dir` 或 `CORE_DIR` 指定
 
 构建命令：

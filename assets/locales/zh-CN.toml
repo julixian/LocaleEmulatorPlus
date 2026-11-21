@@ -122,6 +122,13 @@ core_missing = "缺失"
 open_config_dir = "打开配置目录"
 open_log_dir = "打开日志目录"
 open_app_dir = "打开程序目录"
+check_update = "检查更新"
+update_checking = "正在检查 GitHub Release 更新..."
+update_latest = "当前已是最新版本"
+update_failed = "检查更新失败"
+update_found_status = "发现新版本"
+update_found_prefix = "发现新版本："
+update_open_prompt = "是否立即打开 GitHub Releases 下载页面？"
 
 [context_menu]
 root_title = "Locale Emulator Plus"

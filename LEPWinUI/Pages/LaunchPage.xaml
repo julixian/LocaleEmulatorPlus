@@ -1,0 +1,94 @@
+<Page
+    x:Class="LEPWinUI.Pages.LaunchPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="16" MaxWidth="920" HorizontalAlignment="Stretch">
+            <TextBlock x:Name="PageTitleText" Style="{StaticResource PageTitleTextStyle}" />
+            <InfoBar x:Name="FeedbackBar" IsOpen="False" IsClosable="True" />
+
+            <!-- 目标程序卡片 -->
+            <Border Style="{StaticResource CardBorderStyle}">
+                <StackPanel Spacing="12">
+                    <TextBlock x:Name="TargetGroupHeader" Style="{StaticResource SectionHeaderTextStyle}" Margin="0" />
+
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox
+                            x:Name="TargetPathBox"
+                            Grid.Column="0"
+                            TextChanged="TargetPathBox_TextChanged" />
+                        <Button
+                            x:Name="BrowseBtn"
+                            Grid.Column="1"
+                            VerticalAlignment="Bottom"
+                            Click="BrowseBtn_Click" />
+                    </Grid>
+
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ComboBox
+                            x:Name="ProfileCombo"
+                            Grid.Column="0"
+                            HorizontalAlignment="Stretch"
+                            SelectionChanged="ProfileCombo_SelectionChanged" />
+                        <TextBox
+                            x:Name="ExtraArgsBox"
+                            Grid.Column="1"
+                            TextChanged="ExtraArgsBox_TextChanged" />
+                    </Grid>
+
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="CommandPreviewBox" Grid.Column="0" IsReadOnly="True" FontFamily="Consolas" />
+                        <Button
+                            x:Name="CopyCmdBtn"
+                            Grid.Column="1"
+                            VerticalAlignment="Bottom"
+                            Click="CopyCmdBtn_Click" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- 当前程序专属配置卡片 -->
+            <Border Style="{StaticResource CardBorderStyle}">
+                <StackPanel Spacing="10">
+                    <TextBlock x:Name="AppProfileHeader" Style="{StaticResource SectionHeaderTextStyle}" Margin="0" />
+                    <TextBlock
+                        x:Name="AppProfileStatusText"
+                        TextWrapping="Wrap"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,4,0,0">
+                        <Button x:Name="EditAppProfileBtn" Click="EditAppProfileBtn_Click" />
+                        <Button x:Name="DeleteAppProfileBtn" Click="DeleteAppProfileBtn_Click" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- 底部主操作 -->
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <Button
+                    x:Name="RunNowBtn"
+                    Style="{StaticResource AccentButtonStyle}"
+                    MinWidth="140"
+                    Height="38"
+                    Click="RunNowBtn_Click" />
+                <Button
+                    x:Name="CreateShortcutBtn"
+                    MinWidth="160"
+                    Height="38"
+                    Click="CreateShortcutBtn_Click" />
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

@@ -122,6 +122,13 @@ core_missing = "不足"
 open_config_dir = "設定フォルダを開く"
 open_log_dir = "ログフォルダを開く"
 open_app_dir = "アプリフォルダを開く"
+check_update = "更新を確認"
+update_checking = "GitHub Releases を確認中..."
+update_latest = "最新バージョンです"
+update_failed = "更新の確認に失敗しました"
+update_found_status = "新しいバージョンがあります"
+update_found_prefix = "新しいバージョンが見つかりました："
+update_open_prompt = "GitHub Releases ページを開きますか？"
 
 [context_menu]
 root_title = "Locale Emulator Plus"

@@ -7,6 +7,7 @@ module;
 module LEP.Gui.MainWindow;
 
 import LEP.Gui.Win32Ui;
+import LEP.Updater;
 
 NAMESPACE_BEGIN(lep::gui)
 
@@ -56,10 +57,58 @@ void MainWindow::buildSettingsTab(const HWND page)
     }
     y += boxH + s(16);
 
-    // 3. 快捷打开目录按钮
+    // 3. 快捷打开目录按钮 + 便携版检查更新按钮（Store 版不显示更新检查，走微软商店自动更新）
     createButton(page, m_font, m_i18n.tr("settings", "open_config_dir"), margin, y, s(140), s(30), kIdSettingsOpenConfigDirBtn);
     createButton(page, m_font, m_i18n.tr("settings", "open_log_dir"), margin + s(152), y, s(140), s(30), kIdSettingsOpenLogDirBtn);
     createButton(page, m_font, m_i18n.tr("settings", "open_app_dir"), margin + s(304), y, s(140), s(30), kIdSettingsOpenAppDirBtn);
+    m_settingsCheckUpdateBtn = nullptr;
+    if (!isPackagedApp()) {
+        m_settingsCheckUpdateBtn = createButton(
+            page, m_font, m_i18n.tr("settings", "check_update"),
+            margin + s(456), y, s(150), s(30), kIdSettingsCheckUpdateBtn);
+    }
+}
+
+void MainWindow::handleUpdateCheckDone(const LPARAM lParam)
+{
+    m_updateCheckInFlight = false;
+    if (m_settingsCheckUpdateBtn && IsWindow(m_settingsCheckUpdateBtn)) {
+        EnableWindow(m_settingsCheckUpdateBtn, TRUE);
+    }
+
+    auto* pResult = (std::expected<ReleaseUpdateInfo, std::wstring>*)lParam;
+    if (!pResult) {
+        return;
+    }
+    std::unique_ptr<std::expected<ReleaseUpdateInfo, std::wstring>> guard(pResult);
+
+    if (!*guard) {
+        setStatus(m_i18n.tr("settings", "update_failed"));
+        MessageBoxW(m_hwnd,
+            (m_i18n.tr("settings", "update_failed") + L"\n" + guard->error()).c_str(),
+            m_i18n.tr("app", "error").c_str(), MB_OK | MB_ICONWARNING);
+        return;
+    }
+
+    const auto& info = **guard;
+    if (info.hasUpdate) {
+        setStatus(std::format(L"{} v{}", m_i18n.tr("settings", "update_found_status"), info.latestVersion));
+        const std::wstring msg = std::format(
+            L"{} v{} -> v{}\n\n{}",
+            m_i18n.tr("settings", "update_found_prefix"),
+            LEP_APP_VERSION_WSTR,
+            info.latestVersion,
+            m_i18n.tr("settings", "update_open_prompt"));
+        if (MessageBoxW(m_hwnd, msg.c_str(), m_i18n.tr("app", "info").c_str(), MB_YESNO | MB_ICONINFORMATION) == IDYES) {
+            ShellExecuteW(m_hwnd, L"open", info.releaseUrl.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+        }
+    }
+    else {
+        setStatus(m_i18n.tr("settings", "update_latest"));
+        MessageBoxW(m_hwnd,
+            std::format(L"{} (v{})", m_i18n.tr("settings", "update_latest"), LEP_APP_VERSION_WSTR).c_str(),
+            m_i18n.tr("app", "info").c_str(), MB_OK | MB_ICONINFORMATION);
+    }
 }
 
 void MainWindow::refreshSettingsTab()
@@ -101,6 +150,24 @@ bool MainWindow::handleSettingsCommand(const WORD id, const WORD notifyCode)
 
     if (id == kIdSettingsOpenAppDirBtn) {
         ShellExecuteW(m_hwnd, L"open", m_appDir.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+        return true;
+    }
+
+    if (id == kIdSettingsCheckUpdateBtn && !m_updateCheckInFlight) {
+        m_updateCheckInFlight = true;
+        if (m_settingsCheckUpdateBtn) {
+            EnableWindow(m_settingsCheckUpdateBtn, FALSE);
+        }
+        setStatus(m_i18n.tr("settings", "update_checking"));
+        const HWND targetHwnd = m_hwnd;
+        std::thread([targetHwnd]()
+            {
+                auto* pRes = new std::expected<ReleaseUpdateInfo, std::wstring>(
+                    checkGithubReleaseUpdate(L"julixian", L"LocaleEmulatorPlus", LEP_APP_VERSION_WSTR));
+                if (!PostMessageW(targetHwnd, kMsgUpdateCheckDone, 0, (LPARAM)pRes)) {
+                    delete pRes;
+                }
+            }).detach();
         return true;
     }
 

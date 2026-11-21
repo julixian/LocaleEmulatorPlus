@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<VersionInfo>
-  <Version>3.0.0</Version>
-  <Date>20261121</Date>
-  <Url>https://github.com/julixian/LocaleEmulatorPlus/releases</Url>
-  <Note>Locale Emulator Plus 3.0.0：全面重构为纯原生 C++23 架构，统一 GUI/CLI/右键安装，采用 TOML 配置，支持 Win7–Win11 原生 IExplorerCommand 右键菜单（含 Win11 一级菜单稀疏包）及只读目录配置回退。</Note>
-</VersionInfo>

@@ -81,7 +81,10 @@ private:
         kIdSettingsOpenConfigDirBtn,
         kIdSettingsOpenLogDirBtn,
         kIdSettingsOpenAppDirBtn,
+        kIdSettingsCheckUpdateBtn,
     };
+
+    static constexpr UINT kMsgUpdateCheckDone = WM_APP + 101;
 
     static LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
     LRESULT handleMessage(UINT msg, WPARAM wParam, LPARAM lParam);
@@ -110,6 +113,7 @@ private:
     void buildSettingsTab(HWND page);
     void refreshSettingsTab();
     bool handleSettingsCommand(WORD id, WORD notifyCode);
+    void handleUpdateCheckDone(LPARAM lParam);
 
     void setLaunchTarget(const fs::path& path);
 
@@ -171,6 +175,8 @@ private:
 
     // 页 4 控件句柄
     HWND m_settingsLangCombo = nullptr;
+    HWND m_settingsCheckUpdateBtn = nullptr;
+    bool m_updateCheckInFlight = false;
 };
 
 NAMESPACE_END(lep::gui)
