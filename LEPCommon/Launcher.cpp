@@ -249,6 +249,58 @@ namespace
         }
         return LaunchResult{};
     }
+
+    // Microsoft Store 打包版位于受 WindowsApps 条件 ACL 保护的目录中，非打包子进程（如提权 rundll32.exe 代理）
+    // 无法直接 LoadLibrary WindowsApps 内的 DLL。将 5 个核心运行时文件同步到 LocalState\runtime 后即可无障碍加载。
+    fs::path resolveRuntimeDirectory(const fs::path& appDir)
+    {
+        if (!isPackagedApp()) {
+            return appDir;
+        }
+
+        const fs::path runtimeDir = resolveGlobalConfigPath(appDir).parent_path() / L"runtime";
+        std::error_code ec;
+        fs::create_directories(runtimeDir, ec);
+        if (ec) {
+            return appDir;
+        }
+
+        constexpr std::array<std::wstring_view, 5> kRuntimeFiles = {
+            L"LoaderDll_x64.dll",
+            L"LocaleEmulatorPlus_x64.dll",
+            L"LoaderDll_x86.dll",
+            L"LocaleEmulatorPlus_x86.dll",
+            L"LEPHelper_x86.exe",
+        };
+
+        for (const auto fileName : kRuntimeFiles) {
+            const fs::path src = appDir / fileName;
+            const fs::path dst = runtimeDir / fileName;
+            if (!fs::is_regular_file(src, ec)) {
+                continue;
+            }
+            bool needCopy = !fs::is_regular_file(dst, ec);
+            if (!needCopy) {
+                const auto srcSize = fs::file_size(src, ec);
+                const auto dstSize = fs::file_size(dst, ec);
+                const auto srcTime = fs::last_write_time(src, ec);
+                const auto dstTime = fs::last_write_time(dst, ec);
+                if (ec || srcSize != dstSize || srcTime != dstTime) {
+                    needCopy = true;
+                }
+            }
+            if (needCopy) {
+                if (!CopyFileW(src.c_str(), dst.c_str(), FALSE)) {
+                    // 若目标文件已存在且正被运行中的转区进程占用，继续沿用现有副本
+                    if (!fs::is_regular_file(dst, ec)) {
+                        return appDir;
+                    }
+                }
+            }
+        }
+
+        return runtimeDir;
+    }
 }
 
 std::expected<LEP::LEPB, std::wstring> buildEnvironmentBlock(const Profile& profile)
@@ -365,9 +417,10 @@ std::expected<LaunchResult, std::wstring> launchTarget(const LaunchRequest& req)
         return std::unexpected(std::format(L"无法识别目标程序的 PE 架构：{}", executable.wstring()));
     }
 
+    const fs::path runtimeDir = resolveRuntimeDirectory(req.appDir);
     auto result = (arch == PeArch::X86)
-        ? launchViaHelperX86(req.appDir, *envExp, executable.wstring(), commandLine, workDir, creationFlags, req.waitForExit)
-        : launchDirectX64(req.appDir, *envExp, executable.wstring(), commandLine, workDir, creationFlags, req.waitForExit);
+        ? launchViaHelperX86(runtimeDir, *envExp, executable.wstring(), commandLine, workDir, creationFlags, req.waitForExit)
+        : launchDirectX64(runtimeDir, *envExp, executable.wstring(), commandLine, workDir, creationFlags, req.waitForExit);
 
     // 若目标带 requireAdministrator 清单导致非管理员 CreateProcess 返回 ERROR_ELEVATION_REQUIRED (0xC00702E4 / 740)，自动提权重试
     if (!result && !isAdministrator() && result.error().contains(L"02E4")) {

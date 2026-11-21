@@ -47,7 +47,9 @@ Both editions share the same native components (`LEP.exe` launcher, `LEPShellExt
 - **Human-readable TOML & Localization**: `config.toml` and `<app>.lep.toml`, with built-in `zh-CN`, `en-US`, and `ja-JP` language packs (`locales/*.toml`).
 - **Sensible defaults**: Registry redirection level 2 (Advanced) and UI language hook level 1 (Win32 APIs), with preset Japanese, Simplified Chinese, Traditional Chinese (Taiwan), and Korean profiles.
 
-<img src="img/menu_example.png" width="520" alt="Explorer Context Menu" />
+<img src="img/menu_win11.png" width="520" alt="Windows 11 Context Menu" />
+
+<img src="img/menu_classic.png" width="520" alt="Classic Context Menu" />
 
 > **Note (Windows on ARM)**: When running x86 applications under locale emulation on Windows on ARM, enable *"Disable hybrid execution mode"* (`禁用混合执行模式`) for both `LEPHelper_x86.exe` and the target x86 executable.
 

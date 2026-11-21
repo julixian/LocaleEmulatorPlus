@@ -47,7 +47,9 @@ LocaleEmulatorPlus（LEP）是一款面向 Windows 的按应用区域、代码�
 - **TOML 配置与多语言**：使用人类可读的 `config.toml` 与 `<程序>.lep.toml`，内置简体中文、English、日本語语言包（`locales/*.toml`），支持自定义扩展。
 - **默认挡位开箱即用**：默认注册表重定向 2 档（高级）、界面语言模拟 1 档（Win32 API 模拟），预置日本语、简体中文、繁體中文 (台灣)、한국어四套配置。
 
-<img src="img/menu_example.png" width="520" alt="Explorer Context Menu" />
+<img src="img/menu_win11.png" width="520" alt="Windows 11 Context Menu" />
+
+<img src="img/menu_classic.png" width="520" alt="Classic Context Menu" />
 
 > **提示（Windows on ARM）**：在 Windows on ARM 设备上转区 x86 程序时，需要为 `LEPHelper_x86.exe` 和目标 x86 程序开启「禁用混合执行模式」。
 
