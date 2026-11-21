@@ -124,8 +124,8 @@ python .\build.py --profile fast-release --skip-sparse
 Outputs:
 
 - `out/dist/`: Ready-to-run portable directory (`LEP.exe`, `LEPShellExt.dll`, `LEPHelper_x86.exe`, `LEPShellExt.msix`/`.cer`, `locales/`, and the 4 Core DLLs)
-- `out/LocaleEmulatorPlus-3.0.0-x64.zip`: Portable release archive
-- `out/LocaleEmulatorPlus-3.0.0-x64.msix`: Unsigned Microsoft Store submission package (bundles `LEPWinUI.exe` + full native engine)
+- `out/LocaleEmulatorPlus-<version>-x64.zip`: Portable release archive
+- `out/LocaleEmulatorPlus-<version>-x64.msix`: Unsigned Microsoft Store submission package (bundles `LEPWinUI.exe` + full native engine)
 
 ---
 

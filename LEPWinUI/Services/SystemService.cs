@@ -12,7 +12,7 @@ namespace LEPWinUI.Services;
 
 public static class SystemService
 {
-    public const string AppVersion = "3.0.0";
+    public const string AppVersion = "3.0.1";
     public const string ShellExtClsid = "{A84F3C21-6E9D-4B2A-9F1E-3D7C5B8A2030}";
     public const string SparsePackageName = "julixian.LocaleEmulatorPlus.ShellExt";
 
@@ -25,7 +25,171 @@ public static class SystemService
     private const uint LocaleReturnNumber = 0x20000000;
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-    private static extern int GetCurrentPackageFullName(ref uint packageFullNameLength, IntPtr packageFullName);
+    private static extern int GetCurrentPackageFamilyName(ref uint packageFamilyNameLength, IntPtr packageFamilyName);
+
+    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
+    private static extern IntPtr SetWindowLongPtr64(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+
+    [DllImport("user32.dll")]
+    private static extern bool EnableWindow(IntPtr hWnd, bool bEnable);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool ChangeWindowMessageFilterEx(IntPtr hWnd, uint msg, uint action, IntPtr pChangeFilterStruct);
+
+    private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    private static extern bool EnumChildWindows(IntPtr hWndParent, EnumWindowsProc lpEnumFunc, IntPtr lParam);
+
+    [DllImport("ole32.dll")]
+    private static extern int RevokeDragDrop(IntPtr hWnd);
+
+    [DllImport("shell32.dll")]
+    private static extern void DragAcceptFiles(IntPtr hWnd, bool fAccept);
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    private static extern uint DragQueryFileW(IntPtr hDrop, uint iFile, char[]? lpszFile, uint cch);
+
+    [DllImport("shell32.dll")]
+    private static extern void DragFinish(IntPtr hDrop);
+
+    private delegate IntPtr SubclassProc(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam, nuint uIdSubclass, IntPtr dwRefData);
+
+    [DllImport("comctl32.dll")]
+    private static extern bool SetWindowSubclass(IntPtr hWnd, SubclassProc pfnSubclass, nuint uIdSubclass, IntPtr dwRefData);
+
+    [DllImport("comctl32.dll")]
+    private static extern bool RemoveWindowSubclass(IntPtr hWnd, SubclassProc pfnSubclass, nuint uIdSubclass);
+
+    [DllImport("comctl32.dll")]
+    private static extern IntPtr DefSubclassProc(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam);
+
+    public sealed class ElevatedDragDropHook : IDisposable
+    {
+        private const uint WmDropFiles = 0x0233;
+        private const uint WmCopyData = 0x004A;
+        private const uint WmCopyGlobalData = 0x0049;
+        private const uint MsgfltAllow = 1;
+        private const nuint SubclassId = 0x4C455001;
+
+        private readonly List<IntPtr> _hooked = new();
+        private readonly SubclassProc _proc;
+        private readonly Action<string> _onFileDropped;
+
+        public ElevatedDragDropHook(IntPtr rootHwnd, Action<string> onFileDropped)
+        {
+            _onFileDropped = onFileDropped;
+            _proc = OnWindowMessage;
+
+            var targets = new List<IntPtr> { rootHwnd };
+            EnumChildWindows(rootHwnd, (child, _) =>
+            {
+                targets.Add(child);
+                return true;
+            }, IntPtr.Zero);
+
+            foreach (IntPtr h in targets)
+            {
+                try { RevokeDragDrop(h); } catch { }
+                ChangeWindowMessageFilterEx(h, WmDropFiles, MsgfltAllow, IntPtr.Zero);
+                ChangeWindowMessageFilterEx(h, WmCopyData, MsgfltAllow, IntPtr.Zero);
+                ChangeWindowMessageFilterEx(h, WmCopyGlobalData, MsgfltAllow, IntPtr.Zero);
+                DragAcceptFiles(h, true);
+                if (SetWindowSubclass(h, _proc, SubclassId, IntPtr.Zero))
+                {
+                    _hooked.Add(h);
+                }
+            }
+        }
+
+        private IntPtr OnWindowMessage(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam, nuint uIdSubclass, IntPtr dwRefData)
+        {
+            if (uMsg == WmDropFiles)
+            {
+                uint count = DragQueryFileW(wParam, 0xFFFFFFFF, null, 0);
+                if (count > 0)
+                {
+                    uint len = DragQueryFileW(wParam, 0, null, 0);
+                    if (len > 0)
+                    {
+                        char[] buf = new char[len + 1];
+                        uint copied = DragQueryFileW(wParam, 0, buf, (uint)buf.Length);
+                        if (copied > 0)
+                        {
+                            string path = new string(buf, 0, (int)copied);
+                            _onFileDropped(path);
+                        }
+                    }
+                }
+                DragFinish(wParam);
+                return IntPtr.Zero;
+            }
+            return DefSubclassProc(hWnd, uMsg, wParam, lParam);
+        }
+
+        public void Dispose()
+        {
+            foreach (IntPtr h in _hooked)
+            {
+                try { RemoveWindowSubclass(h, _proc, SubclassId); } catch { }
+            }
+            _hooked.Clear();
+        }
+    }
+
+    public static void SetWindowOwner(IntPtr childHwnd, IntPtr ownerHwnd)
+    {
+        if (childHwnd != IntPtr.Zero && ownerHwnd != IntPtr.Zero)
+        {
+            SetWindowLongPtr64(childHwnd, -8, ownerHwnd); // GWLP_HWNDPARENT
+        }
+    }
+
+    public static void SetWindowEnabled(IntPtr hwnd, bool enabled)
+    {
+        if (hwnd != IntPtr.Zero)
+        {
+            EnableWindow(hwnd, enabled);
+        }
+    }
+
+    public static void BringToForeground(IntPtr hwnd)
+    {
+        if (hwnd != IntPtr.Zero)
+        {
+            SetForegroundWindow(hwnd);
+        }
+    }
+
+    public static string? GetCurrentPackageFamilyNameString()
+    {
+        try
+        {
+            uint length = 0;
+            int rc = GetCurrentPackageFamilyName(ref length, IntPtr.Zero);
+            if (rc != ErrorInsufficientBuffer || length <= 1)
+            {
+                return null;
+            }
+            IntPtr buf = Marshal.AllocHGlobal((int)length * 2);
+            try
+            {
+                rc = GetCurrentPackageFamilyName(ref length, buf);
+                return rc == 0 ? Marshal.PtrToStringUni(buf) : null;
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(buf);
+            }
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     private static extern uint GetDriveTypeW(string lpRootPathName);
@@ -102,16 +266,16 @@ public static class SystemService
 
     public static bool IsPackagedApp()
     {
-        try
-        {
-            uint length = 0;
-            int rc = GetCurrentPackageFullName(ref length, IntPtr.Zero);
-            return rc == ErrorInsufficientBuffer;
-        }
-        catch
+        string? pfn = GetCurrentPackageFamilyNameString();
+        if (string.IsNullOrEmpty(pfn))
         {
             return false;
         }
+        if (pfn.StartsWith(SparsePackageName + "_", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+        return true;
     }
 
     public static bool IsWindows11OrGreater() =>
@@ -126,6 +290,23 @@ public static class SystemService
 
     public static string GetLocalAppDataDirectory()
     {
+        if (IsPackagedApp())
+        {
+            try
+            {
+                return Windows.Storage.ApplicationData.Current.LocalFolder.Path;
+            }
+            catch
+            {
+                string? pfn = GetCurrentPackageFamilyNameString();
+                if (!string.IsNullOrEmpty(pfn))
+                {
+                    string localBase = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                    return Path.Combine(localBase, "Packages", pfn, "LocalState");
+                }
+            }
+        }
+
         string baseDir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         return Path.Combine(baseDir, "LocaleEmulatorPlus");
     }
@@ -148,6 +329,19 @@ public static class SystemService
         string fallback = GetLocalAppDataDirectory();
         Directory.CreateDirectory(fallback);
         return Path.Combine(fallback, "config.toml");
+    }
+
+    public static string ResolveLogDirectory(string appDir, string configPath)
+    {
+        if (IsPackagedApp())
+        {
+            string? cfgDir = Path.GetDirectoryName(configPath);
+            if (!string.IsNullOrEmpty(cfgDir))
+            {
+                return Path.Combine(cfgDir, "Log");
+            }
+        }
+        return Path.Combine(appDir, "Log");
     }
 
     public static DirectoryWriteStatus ProbeDirectoryWriteStatus(string? directory)

@@ -78,21 +78,45 @@ public sealed partial class SettingsPage : Page
         }
     }
 
-    private static void OpenFolder(string dir)
+    private void OpenFolder(string dir, bool ensureExists)
     {
-        Directory.CreateDirectory(dir);
-        Process.Start(new ProcessStartInfo { FileName = dir, UseShellExecute = true });
+        try
+        {
+            if (ensureExists && !Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+            if (!Directory.Exists(dir))
+            {
+                FeedbackBar.Severity = InfoBarSeverity.Warning;
+                FeedbackBar.Message = $"目录不存在：{dir}";
+                FeedbackBar.IsOpen = true;
+                return;
+            }
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                Arguments = SystemService.QuoteArg(dir),
+                UseShellExecute = true,
+            });
+        }
+        catch (Exception ex)
+        {
+            FeedbackBar.Severity = InfoBarSeverity.Error;
+            FeedbackBar.Message = ex.Message;
+            FeedbackBar.IsOpen = true;
+        }
     }
 
     private void OpenConfigDirBtn_Click(object sender, RoutedEventArgs e)
     {
         string? dir = Path.GetDirectoryName(_state.ConfigPath);
-        if (!string.IsNullOrEmpty(dir)) OpenFolder(dir);
+        if (!string.IsNullOrEmpty(dir)) OpenFolder(dir, ensureExists: true);
     }
 
     private void OpenLogDirBtn_Click(object sender, RoutedEventArgs e) =>
-        OpenFolder(Path.Combine(_state.AppDir, "Log"));
+        OpenFolder(SystemService.ResolveLogDirectory(_state.AppDir, _state.ConfigPath), ensureExists: true);
 
     private void OpenAppDirBtn_Click(object sender, RoutedEventArgs e) =>
-        OpenFolder(_state.AppDir);
+        OpenFolder(_state.AppDir, ensureExists: false);
 }

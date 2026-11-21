@@ -6,6 +6,7 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="16" MaxWidth="920" HorizontalAlignment="Stretch">
             <TextBlock x:Name="PageTitleText" Style="{StaticResource PageTitleTextStyle}" Margin="0" />
+            <InfoBar x:Name="FeedbackBar" IsOpen="False" IsClosable="True" />
 
             <!-- 语言与版本卡片 -->
             <Border Style="{StaticResource CardBorderStyle}">

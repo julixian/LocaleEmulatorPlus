@@ -17,7 +17,7 @@
   <Identity
     Name="julixian.LocaleEmulatorPlus"
     Publisher="CN=93DB9627-2815-49E1-8B58-A7EB2CCC8220"
-    Version="3.0.0.0"
+    Version="3.0.1.0"
     ProcessorArchitecture="x64" />
 
   <Properties>

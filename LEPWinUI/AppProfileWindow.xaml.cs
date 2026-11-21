@@ -17,14 +17,16 @@ public sealed partial class AppProfileWindow : Window
     private readonly AppState _state;
     private readonly string _targetPath;
     private readonly DirectoryWriteStatus _dirStatus;
+    private readonly IntPtr _ownerHwnd;
     private LepProfile _currentProfile;
     private AppProfileStorage _existingStorage = AppProfileStorage.None;
 
-    public AppProfileWindow(AppState state, string targetPath)
+    public AppProfileWindow(AppState state, string targetPath, IntPtr ownerHwnd = default)
     {
         _state = state;
         _targetPath = Path.GetFullPath(targetPath);
         _dirStatus = SystemService.ProbeDirectoryWriteStatus(Path.GetDirectoryName(_targetPath));
+        _ownerHwnd = ownerHwnd;
 
         var existing = ConfigService.FindAppProfile(_targetPath, _state.Config);
         if (existing is not null)
@@ -44,6 +46,23 @@ public sealed partial class AppProfileWindow : Window
         TryApplyBackdrop();
         ConfigureChrome();
         PopulateControls();
+
+        if (_ownerHwnd != IntPtr.Zero)
+        {
+            IntPtr selfHwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            SystemService.SetWindowOwner(selfHwnd, _ownerHwnd);
+            if (AppWindow.Presenter is OverlappedPresenter presenter)
+            {
+                presenter.IsModal = true;
+                presenter.IsMinimizable = false;
+            }
+            SystemService.SetWindowEnabled(_ownerHwnd, false);
+            Closed += (_, _) =>
+            {
+                SystemService.SetWindowEnabled(_ownerHwnd, true);
+                SystemService.BringToForeground(_ownerHwnd);
+            };
+        }
     }
 
     private void TryApplyBackdrop()
@@ -214,10 +233,10 @@ public sealed partial class AppProfileWindow : Window
                     {
                         XamlRoot = RootGrid.XamlRoot,
                         Title = i18n.Tr("launch", "admin_dir_title", "目标目录需要管理员权限"),
-                        Content = i18n.Tr("launch", "admin_dir_ask"),
-                        PrimaryButtonText = i18n.Tr("profiles", "save", "管理员写入同目录"),
-                        SecondaryButtonText = i18n.Tr("profiles", "storage_global", "改存到全局配置"),
-                        CloseButtonText = i18n.Tr("app", "close", "关闭"),
+                        Content = i18n.Tr("launch", "admin_dir_ask_dialog", i18n.Tr("launch", "admin_dir_ask")),
+                        PrimaryButtonText = i18n.Tr("launch", "admin_save_btn", "管理员写入"),
+                        SecondaryButtonText = i18n.Tr("launch", "global_save_btn", "存到全局配置"),
+                        CloseButtonText = i18n.Tr("launch", "cancel_btn", "取消"),
                         DefaultButton = ContentDialogButton.Primary,
                     };
                     var choice = await dlg.ShowAsync();

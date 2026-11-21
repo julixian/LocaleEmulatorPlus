@@ -140,20 +140,46 @@ bool isAdministrator()
     return isMember != FALSE;
 }
 
+namespace
+{
+    std::optional<std::wstring> queryCurrentPackageFamilyName()
+    {
+        using GetCurrentPackageFamilyNameFn = LONG (WINAPI*)(UINT32*, PWSTR);
+        const HMODULE kernel32 = GetModuleHandleW(L"kernel32.dll");
+        if (!kernel32) {
+            return std::nullopt;
+        }
+        const auto fn = (GetCurrentPackageFamilyNameFn)GetProcAddress(kernel32, "GetCurrentPackageFamilyName");
+        if (!fn) {
+            return std::nullopt;
+        }
+        UINT32 length = 0;
+        if (fn(&length, nullptr) != ERROR_INSUFFICIENT_BUFFER || length <= 1) {
+            return std::nullopt;
+        }
+        std::wstring pfn((size_t)length, L'\0');
+        if (fn(&length, pfn.data()) != ERROR_SUCCESS) {
+            return std::nullopt;
+        }
+        if (!pfn.empty() && pfn.back() == L'\0') {
+            pfn.pop_back();
+        }
+        return pfn;
+    }
+}
+
 bool isPackagedApp()
 {
-    using GetCurrentPackageFullNameFn = LONG (WINAPI*)(UINT32*, PWSTR);
-    const HMODULE kernel32 = GetModuleHandleW(L"kernel32.dll");
-    if (!kernel32) {
+    const auto pfn = queryCurrentPackageFamilyName();
+    if (!pfn || pfn->empty()) {
         return false;
     }
-    const auto fn = (GetCurrentPackageFullNameFn)GetProcAddress(kernel32, "GetCurrentPackageFullName");
-    if (!fn) {
+    // 便携版稀疏包外壳（julixian.LocaleEmulatorPlus.ShellExt_*）不算完整的 Microsoft Store 打包模式
+    const std::wstring sparsePrefix = toLowerW(std::wstring(LEP_SPARSE_PACKAGE_NAME_WSTR) + L"_");
+    if (toLowerW(*pfn).starts_with(sparsePrefix)) {
         return false;
     }
-    UINT32 length = 0;
-    const LONG rc = fn(&length, nullptr);
-    return rc == ERROR_INSUFFICIENT_BUFFER;
+    return true;
 }
 
 DirectoryWriteStatus probeDirectoryWriteStatus(const fs::path& directory)
@@ -213,9 +239,16 @@ bool isDirectoryWritable(const fs::path& directory)
 
 fs::path resolveGlobalConfigPath(const fs::path& appDir)
 {
-    // Microsoft Store (MSIX) 的安装目录为只读 WindowsApps，统一写入 LocalAppData
+    // Microsoft Store (MSIX) 的安装目录为只读 WindowsApps，统一写入真实物理路径 LocalState（避免 AppData 虚拟化导致资源管理器打不开）
     if (isPackagedApp()) {
-        const fs::path dir = getLocalAppDataDirectory();
+        fs::path dir = getLocalAppDataDirectory();
+        if (const auto pfn = queryCurrentPackageFamilyName(); pfn && !pfn->empty()) {
+            wchar_t* pLocal = nullptr;
+            if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, nullptr, &pLocal)) && pLocal) {
+                dir = fs::path(pLocal) / L"Packages" / *pfn / L"LocalState";
+                CoTaskMemFree(pLocal);
+            }
+        }
         std::error_code ec;
         fs::create_directories(dir, ec);
         return dir / L"config.toml";

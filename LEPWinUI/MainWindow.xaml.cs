@@ -19,6 +19,7 @@ public sealed partial class MainWindow : Window
 {
     private readonly AppState _state;
     private string _currentTag = "launch";
+    private SystemService.ElevatedDragDropHook? _elevatedDropHook;
 
     public IntPtr Hwnd => WindowNative.GetWindowHandle(this);
 
@@ -31,11 +32,41 @@ public sealed partial class MainWindow : Window
         ConfigureWindowChrome();
         ApplyLocalization();
 
+        RootGrid.Loaded += OnRootGridLoaded;
         _state.LanguageChanged += OnLanguageChanged;
-        Closed += (_, _) => _state.LanguageChanged -= OnLanguageChanged;
+        Closed += (_, _) =>
+        {
+            _state.LanguageChanged -= OnLanguageChanged;
+            _elevatedDropHook?.Dispose();
+            _elevatedDropHook = null;
+        };
 
         NavView.SelectedItem = NavLaunchItem;
         NavigateTo("launch");
+    }
+
+    private void OnRootGridLoaded(object sender, RoutedEventArgs e)
+    {
+        if (SystemService.IsAdministrator() && _elevatedDropHook is null)
+        {
+            // 管理员权限下系统 UIPI 会拦截普通资源管理器的 OLE DragDrop，回退到放行 UIPI 的 WM_DROPFILES
+            RootGrid.AllowDrop = false;
+            _elevatedDropHook = new SystemService.ElevatedDragDropHook(Hwnd, path =>
+            {
+                DispatcherQueue.TryEnqueue(() => AcceptDroppedFile(path));
+            });
+        }
+    }
+
+    private void AcceptDroppedFile(string filePath)
+    {
+        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+        {
+            return;
+        }
+        _state.CurrentLaunchTarget = filePath;
+        NavView.SelectedItem = NavLaunchItem;
+        NavigateTo("launch", forceReload: true);
     }
 
     private void TryApplyBackdrop()
@@ -132,7 +163,7 @@ public sealed partial class MainWindow : Window
 
     public void OpenAppProfileWindow(string targetPath)
     {
-        var win = new AppProfileWindow(_state, targetPath);
+        var win = new AppProfileWindow(_state, targetPath, Hwnd);
         win.Closed += (_, _) => _state.ReloadConfig();
         win.Activate();
     }
@@ -157,8 +188,6 @@ public sealed partial class MainWindow : Window
         {
             return;
         }
-        _state.CurrentLaunchTarget = file.Path;
-        NavView.SelectedItem = NavLaunchItem;
-        NavigateTo("launch", forceReload: true);
+        AcceptDroppedFile(file.Path);
     }
 }

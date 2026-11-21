@@ -69,7 +69,7 @@ public sealed class AppProfileEntry
 
 public sealed class GlobalConfig
 {
-    public string Version { get; set; } = "3.0.0";
+    public string Version { get; set; } = "3.0.1";
     public string Language { get; set; } = "auto";
     public List<LepProfile> Profiles { get; set; } = new();
     public List<AppProfileEntry> AppProfiles { get; set; } = new();

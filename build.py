@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build LocaleEmulatorPlus 3.0.0 (native C++23 via mcpp) and stage release artifacts.
+"""Build LocaleEmulatorPlus (native C++23 via mcpp + optional WinUI 3 Store MSIX) and stage release artifacts.
 
 Requires Windows, Python 3.10+, mcpp, and Windows 10/11 SDK (for makeappx/signtool).
 """
@@ -16,7 +16,7 @@ import zipfile
 
 
 kScriptRoot = Path(__file__).resolve().parent
-kVersion = "3.0.0"
+kVersion = "3.0.1"
 kDefaultSdkRoot = Path(r"C:\Program Files (x86)\Windows Kits\10")
 kDefaultSdkVersion = "10.0.26100.0"
 kPublisher = "CN=LocaleEmulatorPlus"

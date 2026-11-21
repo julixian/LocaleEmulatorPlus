@@ -141,7 +141,7 @@ bool MainWindow::handleSettingsCommand(const WORD id, const WORD notifyCode)
     }
 
     if (id == kIdSettingsOpenLogDirBtn) {
-        const fs::path dir = m_appDir / L"Log";
+        const fs::path dir = isPackagedApp() ? (m_configPath.parent_path() / L"Log") : (m_appDir / L"Log");
         std::error_code ec;
         fs::create_directories(dir, ec);
         ShellExecuteW(m_hwnd, L"open", dir.c_str(), nullptr, nullptr, SW_SHOWNORMAL);

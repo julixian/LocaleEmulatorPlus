@@ -124,8 +124,8 @@ python .\build.py --profile fast-release --skip-sparse
 主要构建产物：
 
 - `out/dist/`：便携版可直接运行目录（`LEP.exe`、`LEPShellExt.dll`、`LEPHelper_x86.exe`、`LEPShellExt.msix` / `.cer`、`locales/` 及 4 个 Core DLL）
-- `out/LocaleEmulatorPlus-3.0.0-x64.zip`：便携版压缩包
-- `out/LocaleEmulatorPlus-3.0.0-x64.msix`：Microsoft Store 未签名提交包（含 `LEPWinUI.exe` 与完整原生引擎）
+- `out/LocaleEmulatorPlus-<version>-x64.zip`：便携版压缩包
+- `out/LocaleEmulatorPlus-<version>-x64.msix`：Microsoft Store 未签名提交包（含 `LEPWinUI.exe` 与完整原生引擎）
 
 ---
 

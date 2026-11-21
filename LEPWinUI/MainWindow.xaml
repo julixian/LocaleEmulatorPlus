@@ -37,7 +37,7 @@
                     VerticalAlignment="Center">
                     <TextBlock
                         x:Name="VersionBadgeText"
-                        Text="v3.0.0"
+                        Text="v3.0.1"
                         FontSize="11"
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 </Border>
