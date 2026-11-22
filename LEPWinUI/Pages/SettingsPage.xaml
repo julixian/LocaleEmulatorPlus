@@ -40,6 +40,7 @@
                         <Button x:Name="OpenConfigDirBtn" Click="OpenConfigDirBtn_Click" />
                         <Button x:Name="OpenLogDirBtn" Click="OpenLogDirBtn_Click" />
                         <Button x:Name="OpenAppDirBtn" Click="OpenAppDirBtn_Click" />
+                        <Button x:Name="CheckUpdateBtn" Click="CheckUpdateBtn_Click" />
                     </StackPanel>
                 </StackPanel>
             </Border>

@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
+using System.Threading;
 using LEPWinUI.Models;
 using Microsoft.Win32;
 
@@ -35,6 +37,9 @@ public static class SystemService
 
     [DllImport("user32.dll")]
     private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern IntPtr FindWindowW(string? lpClassName, string? lpWindowName);
 
     [DllImport("user32.dll")]
     private static extern bool ChangeWindowMessageFilterEx(IntPtr hWnd, uint msg, uint action, IntPtr pChangeFilterStruct);
@@ -486,6 +491,37 @@ public static class SystemService
         }
         string prefix = SparsePackageName + "_";
         return pkgs.GetSubKeyNames().Any(n => n.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public static void RestartExplorer()
+    {
+        foreach (Process proc in Process.GetProcessesByName("explorer"))
+        {
+            using (proc)
+            {
+                try
+                {
+                    proc.Kill();
+                    proc.WaitForExit(3000);
+                }
+                catch
+                {
+                }
+            }
+        }
+
+        Thread.Sleep(300);
+
+        if (FindWindowW("Shell_TrayWnd", null) == IntPtr.Zero)
+        {
+            string winDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+            string explorerExe = Path.Combine(winDir, "explorer.exe");
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = explorerExe,
+                UseShellExecute = true,
+            });
+        }
     }
 
     public static string NormalizePathForMatch(string path)

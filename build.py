@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build LocaleEmulatorPlus (native C++23 via mcpp + optional WinUI 3 Store MSIX) and stage release artifacts.
+"""Build LocaleEmulatorPlus (native C++23 via mcpp + optional WinUI 3 Store MSIX / Fluent portable zip) and stage release artifacts.
 
 Requires Windows, Python 3.10+, mcpp, and Windows 10/11 SDK (for makeappx/signtool).
 """
@@ -17,6 +17,7 @@ import zipfile
 
 kScriptRoot = Path(__file__).resolve().parent
 kVersion = "3.0.1"
+kZipRootName = "LocaleEmulatorPlus"
 kDefaultSdkRoot = Path(r"C:\Program Files (x86)\Windows Kits\10")
 kDefaultSdkVersion = "10.0.26100.0"
 kPublisher = "CN=LocaleEmulatorPlus"
@@ -42,8 +43,10 @@ def parseOptions(argv: list[str] | None = None) -> argparse.Namespace:
                         help="Reuse existing out/dist native binaries (useful when iterating on LEPWinUI)")
     parser.add_argument("--store-msix", dest="storeMsix", action="store_true",
                         help="Also build full Microsoft Store MSIX package from packaging/AppxManifest.store.xml")
+    parser.add_argument("--fluent-zip", dest="fluentZip", action="store_true",
+                        help="Also build WinUI 3 Fluent portable directory (out/fluent-dist) and zip archive in out/")
     parser.add_argument("--zip", dest="makeZip", action="store_true",
-                        help="Create portable release zip archive in out/")
+                        help="Create native Win32 portable release zip archive in out/")
     parser.add_argument("--dry-run", dest="dryRun", action="store_true")
     return parser.parse_args(argv)
 
@@ -154,12 +157,9 @@ def buildSparsePackage(distDir: Path, sdkRoot: Path, sdkVersion: str,
         shutil.copy2(cerSrc, cerOut)
 
 
-def buildStorePackage(distDir: Path, sdkRoot: Path, sdkVersion: str, dryRun: bool) -> None:
-    makeappx = findSdkTool(sdkRoot, sdkVersion, "makeappx.exe")
+def publishWinUi(dryRun: bool) -> Path:
     winuiProj = kScriptRoot / "LEPWinUI" / "LEPWinUI.csproj"
     winuiOut = kScriptRoot / "out" / "winui-publish"
-    stageDir = kScriptRoot / "out" / "store-stage"
-    msixOut = kScriptRoot / "out" / f"LocaleEmulatorPlus-{kVersion}-x64.msix"
 
     if not dryRun and winuiOut.exists():
         shutil.rmtree(winuiOut)
@@ -171,22 +171,33 @@ def buildStorePackage(distDir: Path, sdkRoot: Path, sdkVersion: str, dryRun: boo
         "-p:Platform=x64",
         "-o", str(winuiOut),
     ], kScriptRoot, dryRun)
+    return winuiOut
+
+
+def mergeDistInto(distDir: Path, targetDir: Path, skipNames: set[str]) -> None:
+    for item in distDir.iterdir():
+        if item.name in skipNames:
+            continue
+        dst = targetDir / item.name
+        if item.is_dir():
+            if dst.exists():
+                shutil.rmtree(dst)
+            shutil.copytree(item, dst)
+        else:
+            shutil.copy2(item, dst)
+
+
+def buildStorePackage(distDir: Path, winuiOut: Path, sdkRoot: Path, sdkVersion: str, dryRun: bool) -> None:
+    makeappx = findSdkTool(sdkRoot, sdkVersion, "makeappx.exe")
+    stageDir = kScriptRoot / "out" / "store-stage"
+    msixOut = kScriptRoot / "out" / f"LocaleEmulatorPlus-{kVersion}-x64.msix"
 
     if not dryRun:
         if stageDir.exists():
             shutil.rmtree(stageDir)
         shutil.copytree(winuiOut, stageDir, ignore=shutil.ignore_patterns("*.pdb"))
         # 合并原生 C++ 引擎（LEP.exe / LEPShellExt.dll / LEPHelper_x86.exe / Core DLL / locales）
-        for item in distDir.iterdir():
-            if item.name in ("LEPShellExt.msix", "LEPShellExt.cer"):
-                continue
-            dst = stageDir / item.name
-            if item.is_dir():
-                if dst.exists():
-                    shutil.rmtree(dst)
-                shutil.copytree(item, dst)
-            else:
-                shutil.copy2(item, dst)
+        mergeDistInto(distDir, stageDir, {"LEPShellExt.msix", "LEPShellExt.cer", "config.toml", "Log"})
 
         (stageDir / "Assets").mkdir(parents=True, exist_ok=True)
         shutil.copy2(kScriptRoot / "packaging" / "AppxManifest.store.xml", stageDir / "AppxManifest.xml")
@@ -195,6 +206,35 @@ def buildStorePackage(distDir: Path, sdkRoot: Path, sdkVersion: str, dryRun: boo
 
     runCommand([str(makeappx), "pack", "/d", str(stageDir), "/p", str(msixOut), "/o"],
                kScriptRoot, dryRun)
+
+
+def packDirectoryToZip(srcDir: Path, zipPath: Path) -> None:
+    with zipfile.ZipFile(zipPath, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
+        for filePath in sorted(srcDir.rglob("*")):
+            if filePath.is_file():
+                rel = filePath.relative_to(srcDir)
+                if rel.parts[0] in ("config.toml", "Log"):
+                    continue
+                zf.write(filePath, Path(kZipRootName) / rel)
+
+
+def buildFluentPortable(distDir: Path, winuiOut: Path, dryRun: bool) -> Path:
+    fluentDir = kScriptRoot / "out" / "fluent-dist"
+    zipPath = kScriptRoot / "out" / f"LocaleEmulatorPlus-{kVersion}-Fluent-x64.zip"
+
+    if dryRun:
+        print(f"[fluent-zip] would stage {fluentDir} and pack -> {zipPath}", flush=True)
+        return zipPath
+
+    if fluentDir.exists():
+        shutil.rmtree(fluentDir)
+    shutil.copytree(winuiOut, fluentDir, ignore=shutil.ignore_patterns("*.pdb"))
+    # 便携版保留稀疏包（LEPShellExt.msix / .cer）与 Assets/，以便一键启用 Win11 一级右键菜单
+    mergeDistInto(distDir, fluentDir, {"config.toml", "Log"})
+
+    packDirectoryToZip(fluentDir, zipPath)
+    print(f"[zip] {zipPath}", flush=True)
+    return zipPath
 
 
 def copyCoreDlls(coreDir: Path, distDir: Path, dryRun: bool) -> None:
@@ -216,10 +256,7 @@ def createPortableZip(distDir: Path, dryRun: bool) -> Path:
     if dryRun:
         print(f"[zip] would pack {distDir} -> {zipPath}", flush=True)
         return zipPath
-    with zipfile.ZipFile(zipPath, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
-        for filePath in sorted(distDir.rglob("*")):
-            if filePath.is_file():
-                zf.write(filePath, filePath.relative_to(distDir))
+    packDirectoryToZip(distDir, zipPath)
     print(f"[zip] {zipPath}", flush=True)
     return zipPath
 
@@ -261,8 +298,15 @@ def main(argv: list[str] | None = None) -> int:
                 buildSparsePackage(distDir, options.sdkRoot, options.sdkVersion,
                                    options.pfx, options.pfxPassword, options.dryRun)
 
-        if options.storeMsix:
-            buildStorePackage(distDir, options.sdkRoot, options.sdkVersion, options.dryRun)
+        winuiOut: Path | None = None
+        if options.storeMsix or options.fluentZip:
+            winuiOut = publishWinUi(options.dryRun)
+
+        if options.storeMsix and winuiOut is not None:
+            buildStorePackage(distDir, winuiOut, options.sdkRoot, options.sdkVersion, options.dryRun)
+
+        if options.fluentZip and winuiOut is not None:
+            buildFluentPortable(distDir, winuiOut, options.dryRun)
 
         if options.makeZip:
             createPortableZip(distDir, options.dryRun)

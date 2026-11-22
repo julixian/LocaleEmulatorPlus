@@ -6,31 +6,31 @@
 
 LocaleEmulatorPlus（LEP）是一款面向 Windows 的按应用区域、代码页、字体、界面语言与时区模拟启动工具。
 
-3.0.0 起彻底告别 .NET Framework 遗留代码，底层重写为**纯原生 C++23**（`/MT` 静态链接、零外部运行库依赖），同时提供 **Microsoft Store Fluent（WinUI 3）** 与 **原生 Win32 便携版** 两种发行形态。原生进程注入核心位于 [LocaleEmulatorPlus-Core](https://github.com/julixian/LocaleEmulatorPlus-Core)。
+3.0.0 起彻底告别 .NET Framework 遗留代码，底层重写为**纯原生 C++23**（`/MT` 静态链接、零外部运行库依赖），提供 **Microsoft Store 版（Fluent / WinUI 3）**、**Fluent 便携版（WinUI 3）** 与 **原生 Win32 便携版** 三种发行形态。原生进程注入核心位于 [LocaleEmulatorPlus-Core](https://github.com/julixian/LocaleEmulatorPlus-Core)。
 
 本项目源自 [Locale Emulator](https://github.com/xupefei/Locale-Emulator) 与 [Locale Emulator Core](https://github.com/xupefei/Locale-Emulator-Core)。
 
 ---
 
-## 两种版本怎么选
+## 版本对比
 
-两版底层共用同一套原生组件（`LEP.exe` 启动器、`LEPShellExt.dll` 右键菜单、`LEPHelper_x86.exe` 32 位桥接器、Core DLL）、同一份 TOML 配置格式和语言包。即使在商店版里，通过右键菜单直接运行程序也是由原生 `LEP.exe` 直接启动，不需要拉起 WinUI 3 界面。
+三个版本底层共用同一套原生组件（`LEP.exe` 启动器、`LEPShellExt.dll` 右键菜单、`LEPHelper_x86.exe` 32 位桥接器、Core DLL）、同一份 TOML 配置格式和语言包。通过右键菜单直接运行目标程序时均由原生 `LEP.exe` 直接启动，无需拉起 WinUI 3 界面。
 
-| 对比项 | Microsoft Store 版（Fluent / WinUI 3） | 便携版（原生 Win32） |
-| :--- | :--- | :--- |
-| **适用系统** | Windows 10 (2004+) / Windows 11 (x64) | Windows 7 SP1 – Windows 11 (x64) |
-| **界面** | WinUI 3 + Mica 云母材质，自动跟随深浅色 | 纯原生 Win32，压缩包约 `1.4 MB`，零依赖 |
-| **Win11 一级右键菜单** | 安装即自动托管，免证书、免稀疏包 | 一键启用（自动导入公钥并注册 MSIX 稀疏包） |
-| **配置文件位置** | `%LOCALAPPDATA%\LocaleEmulatorPlus\config.toml` | 默认程序同目录 `config.toml`（只读时自动回退 LocalAppData） |
-| **更新方式** | Microsoft Store 自动更新 | 「设置与关于」内手动检查 GitHub Releases |
+| 对比项 | Microsoft Store 版（Fluent / WinUI 3） | Fluent 便携版（WinUI 3） | 原生便携版（Win32） |
+| :--- | :--- | :--- | :--- |
+| **适用系统** | Windows 10 (2004+) / Windows 11 (x64) | Windows 10 (2004+) / Windows 11 (x64) | Windows 7 SP1 – Windows 11 (x64) |
+| **界面与体积** | WinUI 3 + Mica 云母材质，随系统深浅色 | WinUI 3 + Mica，自包含运行库，压缩包约 `67 MB` | 纯原生 Win32，压缩包约 `1.6 MB`，零依赖 |
+| **Win11 一级右键菜单** | 安装即自动托管，免证书、免稀疏包 | 一键启用（内置 MSIX 稀疏包） | 一键启用（内置 MSIX 稀疏包） |
+| **配置文件位置** | `%LOCALAPPDATA%\Packages\...\LocalState\config.toml` | 默认程序同目录 `config.toml`（只读时回退 LocalAppData） | 默认程序同目录 `config.toml`（只读时回退 LocalAppData） |
+| **更新方式** | Microsoft Store 自动更新 | 「设置与关于」内手动检查 GitHub Releases | 「设置与关于」内手动检查 GitHub Releases |
 
 ### 界面预览
 
-**Microsoft Store 版（WinUI 3 Fluent）**
+**WinUI 3 Fluent 版（Microsoft Store / Fluent 便携版）**
 
 <img src="img/ui_fluent_cn.png" width="760" alt="LocaleEmulatorPlus WinUI 3 Fluent UI" />
 
-**便携版（原生 Win32）**
+**原生便携版（Win32）**
 
 <img src="img/ui_win32.png" width="680" alt="LocaleEmulatorPlus Native Win32 UI" />
 
@@ -89,7 +89,7 @@ LEP.exe uninstall
 
 - `LEPCommon/`：共享 C++23 模块（TOML 配置、系统区域/时区枚举、多语言、快捷方式、进程启动器）。
 - `LEP/`：原生主程序 `LEP.exe`（Win32 GUI、CLI、WinHTTP GitHub Release 更新检查、右键菜单安装器）。
-- `LEPWinUI/`：Microsoft Store 版 Fluent 2 前端 `LEPWinUI.exe`（WinUI 3 + .NET 10 + Mica）。
+- `LEPWinUI/`：Fluent 2 前端 `LEPWinUI.exe`（WinUI 3 + .NET 10 + Mica，用于 Microsoft Store 版与 Fluent 便携版）。
 - `LEPShellExt/`：原生 COM `IExplorerCommand` 右键菜单扩展 `LEPShellExt.dll`（运行直达 `LEP.exe`，UI 自动路由至 `LEPWinUI.exe` 或 `LEP.exe`）。
 - `LEPHelper/`：轻量 32 位启动桥接器 `LEPHelper_x86.exe`（仅链接 `kernel32.dll`，负责调用 `LoaderDll_x86.dll`）。
 - `assets/`：程序图标、PerMonitorV2 / LongPath 清单与 `locales/*.toml` 语言文件。
@@ -104,7 +104,7 @@ LEP.exe uninstall
 - Windows x64，Python 3.10+
 - [mcpp](https://github.com/mcpp-community/mcpp)（自动管理 `llvm@23.1.3` 工具链与 `julixian.tomlkitpp` 依赖）
 - Visual Studio（MSVC v143 / `14.44` sysroot，兼容 Windows 7）及 Windows 10/11 SDK（含 `makeappx.exe`、`signtool.exe`）
-- .NET 10 SDK（仅构建 Microsoft Store WinUI 3 Fluent 版 `--store-msix` 时需要）
+- .NET 10 SDK（仅构建 WinUI 3 Fluent 版 `--store-msix` / `--fluent-zip` 时需要）
 - 相邻目录的 [LocaleEmulatorPlus-Core](https://github.com/julixian/LocaleEmulatorPlus-Core) 构建产物（`out/x86` 与 `out/x64`），也可通过 `--core-dir` 或 `CORE_DIR` 指定
 
 ### 构建命令
@@ -113,11 +113,11 @@ LEP.exe uninstall
 # 构建原生便携版（含 Win11 稀疏包与便携 zip）
 python .\build.py --profile release --zip
 
-# 全量构建：便携版 zip + Microsoft Store WinUI 3 Fluent 版 MSIX
-python .\build.py --profile release --store-msix --zip
+# 全量构建：原生便携 zip + Fluent 便携 zip + Microsoft Store MSIX
+python .\build.py --profile release --store-msix --fluent-zip --zip
 
-# 仅修改 LEPWinUI 时，复用已有原生产物快速重打 Store MSIX
-python .\build.py --skip-native --store-msix
+# 仅修改 LEPWinUI 时，复用已有原生产物快速重打 Store MSIX 与 Fluent 便携版
+python .\build.py --skip-native --store-msix --fluent-zip
 
 # 开发期快速构建（跳过 LTO 与稀疏包）
 python .\build.py --profile fast-release --skip-sparse
@@ -125,8 +125,10 @@ python .\build.py --profile fast-release --skip-sparse
 
 主要构建产物：
 
-- `out/dist/`：便携版可直接运行目录（`LEP.exe`、`LEPShellExt.dll`、`LEPHelper_x86.exe`、`LEPShellExt.msix` / `.cer`、`locales/` 及 4 个 Core DLL）
-- `out/LocaleEmulatorPlus-<version>-x64.zip`：便携版压缩包
+- `out/dist/`：原生便携版可直接运行目录（`LEP.exe`、`LEPShellExt.dll`、`LEPHelper_x86.exe`、`LEPShellExt.msix` / `.cer`、`Assets/`、`locales/` 及 4 个 Core DLL）
+- `out/fluent-dist/`：Fluent 便携版可直接运行目录（在 `out/dist/` 基础上合并自包含 `LEPWinUI.exe` 及运行库）
+- `out/LocaleEmulatorPlus-<version>-x64.zip`：原生 Win32 便携版压缩包
+- `out/LocaleEmulatorPlus-<version>-Fluent-x64.zip`：WinUI 3 Fluent 便携版压缩包
 - `out/LocaleEmulatorPlus-<version>-x64.msix`：Microsoft Store 未签名提交包（含 `LEPWinUI.exe` 与完整原生引擎）
 
 ---
