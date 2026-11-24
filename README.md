@@ -55,6 +55,14 @@ LocaleEmulatorPlus（LEP）是一款面向 Windows 的按应用区域、代码�
 
 <img src="img/Disable_Mixed_Execution_Mode.png" width="450" alt="Disable Mixed Execution Mode" />
 
+> **提示（老版 InstallShield 安装程序乱码 / `????`）**：部分老游戏使用的 InstallShield InstallScript MSI 安装程序（`ScriptDriven=1`）会通过 COM `LocalServer32` 由系统 `svchost.exe` 拉起进程外宿主 `IDriver.exe`，脱离 `setup.exe` 进程树，导致向导中的半角片假名在 GBK 下全部变成 `?`。可先用 LEP 提前拉起带 `-Embedding` 参数的 `IDriver.exe`（版本号目录如 `7` 视具体安装器而定，权限需与 `setup.exe` 一致），再运行 `setup.exe`：
+>
+> ```powershell
+> LEP.exe run --profile "日本语" --admin "C:\Program Files (x86)\Common Files\InstallShield\Driver\7\Intel 32\IDriver.exe" -- -Embedding
+> ```
+
+<img src="img/installshield_idriver_garbled.jpg" width="520" alt="InstallShield IDriver Garbled Example" />
+
 ---
 
 ## 命令行用法

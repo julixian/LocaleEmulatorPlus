@@ -55,6 +55,14 @@ All three editions share the same native components (`LEP.exe` launcher, `LEPShe
 
 <img src="img/Disable_Mixed_Execution_Mode.png" width="450" alt="Disable Mixed Execution Mode" />
 
+> **Note (Legacy InstallShield installers showing `????`)**: Older InstallShield InstallScript MSI installers (`ScriptDriven=1`) activate the out-of-process COM server `IDriver.exe` via `svchost.exe` (DcomLaunch), outside `setup.exe`'s process tree—causing half-width katakana in wizard dialogs to turn into `?` on non-Japanese hosts. Pre-launch `IDriver.exe` with `-Embedding` under LEP first (adjust the driver version folder such as `7` as needed, matching `setup.exe`'s elevation level), then run `setup.exe`:
+>
+> ```powershell
+> LEP.exe run --profile "日本语" --admin "C:\Program Files (x86)\Common Files\InstallShield\Driver\7\Intel 32\IDriver.exe" -- -Embedding
+> ```
+
+<img src="img/installshield_idriver_garbled.jpg" width="520" alt="InstallShield IDriver Garbled Example" />
+
 ---
 
 ## CLI Usage
