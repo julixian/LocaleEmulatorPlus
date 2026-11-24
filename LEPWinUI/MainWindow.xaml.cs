@@ -122,7 +122,9 @@ public sealed partial class MainWindow : Window
     private void ApplyLocalization()
     {
         var i18n = _state.I18n;
-        TitleBarText.Text = i18n.Tr("app", "title", "Locale Emulator Plus");
+        TitleBarText.Text = SystemService.IsPackagedApp()
+            ? "LEP Locale Switcher"
+            : i18n.Tr("app", "title", "Locale Emulator Plus");
         Title = $"{TitleBarText.Text} v{SystemService.AppVersion}";
         NavLaunchItem.Content = i18n.Tr("tabs", "launch", "启动与快捷方式");
         NavProfilesItem.Content = i18n.Tr("tabs", "profiles", "配置管理");

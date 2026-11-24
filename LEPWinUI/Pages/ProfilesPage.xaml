@@ -19,11 +19,11 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <!-- 左侧：全局配置列表 + 全局保存的程序专属配置 -->
+            <!-- 左侧：全局配置列表 + 全局保存的程序专属配置（上提并拉高专属配置区） -->
             <Grid Grid.Column="0" RowSpacing="12">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="*" />
-                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="1.15*" />
+                    <RowDefinition Height="1*" />
                 </Grid.RowDefinitions>
 
                 <Border Grid.Row="0" Style="{StaticResource CardBorderStyle}" Padding="12">
@@ -62,10 +62,15 @@
                 </Border>
 
                 <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}" Padding="12">
-                    <StackPanel Spacing="8">
-                        <TextBlock x:Name="AppListHeader" FontWeight="SemiBold" />
-                        <ListView x:Name="GlobalAppsList" Height="110" SelectionMode="Single" DoubleTapped="GlobalAppsList_DoubleTapped" />
-                        <Grid ColumnSpacing="6">
+                    <Grid RowSpacing="8">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock x:Name="AppListHeader" Grid.Row="0" FontWeight="SemiBold" />
+                        <ListView x:Name="GlobalAppsList" Grid.Row="1" SelectionMode="Single" DoubleTapped="GlobalAppsList_DoubleTapped" />
+                        <Grid Grid.Row="2" ColumnSpacing="6">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="*" />
@@ -73,7 +78,7 @@
                             <Button x:Name="EditAppBtn" Grid.Column="0" HorizontalAlignment="Stretch" Click="EditAppBtn_Click" />
                             <Button x:Name="RemoveAppBtn" Grid.Column="1" HorizontalAlignment="Stretch" Click="RemoveAppBtn_Click" />
                         </Grid>
-                    </StackPanel>
+                    </Grid>
                 </Border>
             </Grid>
 

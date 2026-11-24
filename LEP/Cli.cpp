@@ -65,6 +65,7 @@ namespace
             L"      按优先级运行（程序专属配置 > 第一个全局配置 > 默认日区）。\n\n"
             L"  LEP.exe run <目标程序> [选项] [-- 透传参数...]\n"
             L"      --profile <名称>      使用指定名称的全局配置\n"
+            L"      --app-profile <名称>  使用目标程序指定名称的专属配置\n"
             L"      --locale <区域名>     临时覆盖区域（如 ja-JP、zh-TW）\n"
             L"      --tz <时区ID>         临时覆盖时区（如 \"Tokyo Standard Time\"）\n"
             L"      --reg <0|1|2>         注册表重定向模式\n"
@@ -74,7 +75,7 @@ namespace
             L"      --wait                等待目标进程退出并返回其退出码\n\n"
             L"  LEP.exe manage <目标程序>\n"
             L"      打开该程序的专属配置编辑窗口。\n\n"
-            L"  LEP.exe shortcut <目标程序> [--profile <名称>] [--out <lnk路径>] [-- 透传参数...]\n"
+            L"  LEP.exe shortcut <目标程序> [--profile <名称> | --app-profile <名称>] [--out <lnk路径>] [-- 透传参数...]\n"
             L"      直接创建桌面或指定路径的快捷方式。\n\n"
             L"  LEP.exe install [--all-users] [--win11]\n"
             L"  LEP.exe uninstall [--all-users] [--win11]\n"
@@ -91,6 +92,7 @@ namespace
 
         fs::path targetPath;
         std::optional<std::wstring> profileName;
+        std::optional<std::wstring> appProfileName;
         std::optional<std::wstring> overrideLocale;
         std::optional<std::wstring> overrideTz;
         std::optional<int> overrideReg;
@@ -113,6 +115,9 @@ namespace
             }
             if ((arg == L"--profile" || arg == L"-p") && i + 1 < args.size()) {
                 profileName = args[++i];
+            }
+            else if ((arg == L"--app-profile" || arg == L"-a") && i + 1 < args.size()) {
+                appProfileName = args[++i];
             }
             else if (arg == L"--locale" && i + 1 < args.size()) {
                 overrideLocale = args[++i];
@@ -152,7 +157,16 @@ namespace
         }
 
         Profile activeProfile = createDefaultProfile();
-        if (profileName) {
+        if (appProfileName) {
+            const auto found = findAppProfileByName(targetPath, cfg, *appProfileName);
+            if (!found) {
+                writeConsoleOrMessageBox(L"Locale Emulator Plus",
+                    std::format(L"找不到该程序名为「{}」的专属配置。", *appProfileName), true);
+                return 3;
+            }
+            activeProfile = *found;
+        }
+        else if (profileName) {
             const auto found = findGlobalProfileByName(cfg, *profileName);
             if (!found) {
                 writeConsoleOrMessageBox(L"Locale Emulator Plus",
@@ -161,8 +175,8 @@ namespace
             }
             activeProfile = *found;
         }
-        else if (const auto appProf = findAppProfile(targetPath, cfg)) {
-            activeProfile = appProf->profile;
+        else if (const auto appProfs = findAppProfiles(targetPath, cfg); appProfs && !appProfs->profiles.empty()) {
+            activeProfile = appProfs->profiles.front();
         }
         else if (!cfg.profiles.empty()) {
             activeProfile = cfg.profiles.front();
@@ -195,6 +209,7 @@ namespace
         fs::path targetPath;
         fs::path outPath;
         std::optional<std::wstring> profileName;
+        std::optional<std::wstring> appProfileName;
         std::wstring extraArgs;
 
         for (size_t i = 2; i < args.size(); ++i) {
@@ -208,6 +223,9 @@ namespace
             }
             if ((arg == L"--profile" || arg == L"-p") && i + 1 < args.size()) {
                 profileName = args[++i];
+            }
+            else if ((arg == L"--app-profile" || arg == L"-a") && i + 1 < args.size()) {
+                appProfileName = args[++i];
             }
             else if ((arg == L"--out" || arg == L"-o") && i + 1 < args.size()) {
                 outPath = fs::path(args[++i]);
@@ -233,6 +251,7 @@ namespace
             .targetPath = absTarget.empty() ? targetPath : absTarget,
             .shortcutOutputPath = outPath,
             .profileName = profileName,
+            .appProfileName = appProfileName,
             .extraArguments = extraArgs,
         });
         if (!res) {

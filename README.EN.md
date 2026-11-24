@@ -65,13 +65,16 @@ All three editions share the same native components (`LEP.exe` launcher, `LEPShe
 # Launch with a named global profile (arguments after -- are forwarded to the target)
 LEP.exe run --profile "日本语" "C:\Games\App.exe" -- --windowed
 
-# Launch using the app's own .lep.toml / global fallback profile, or first global profile
+# Launch with a named per-application profile (multiple profiles per app supported)
+LEP.exe run --app-profile "Windowed" "C:\Games\App.exe"
+
+# Launch using the app's first dedicated profile, or fall back to the first global profile
 LEP.exe run "C:\Games\App.exe"
 
-# Open the per-application profile editor
+# Open the per-application profile manager
 LEP.exe manage "C:\Games\App.exe"
 
-# Create a .lnk shortcut launching through LEP
+# Create a .lnk shortcut launching through LEP (supports --profile or --app-profile)
 LEP.exe shortcut "C:\Games\App.exe" --profile "日本语" --out "C:\Users\Me\Desktop\App.lnk"
 
 # List global profiles

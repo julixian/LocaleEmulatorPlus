@@ -246,11 +246,22 @@ public static class ConfigService
         WriteTextAtomic(configPath, body);
     }
 
-    public static ResolvedAppProfile? FindAppProfile(string targetPath, GlobalConfig globalConfig)
+    public static ResolvedAppProfiles? FindAppProfiles(string targetPath, GlobalConfig globalConfig)
     {
         if (string.IsNullOrWhiteSpace(targetPath))
         {
             return null;
+        }
+
+        static void EnsureNames(List<LepProfile> list, string target)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (string.IsNullOrWhiteSpace(list[i].Name))
+                {
+                    list[i].Name = list.Count == 1 ? Path.GetFileName(target) : $"Profile {i + 1}";
+                }
+            }
         }
 
         string sidePath = AlongsideAppConfigPath(targetPath);
@@ -259,15 +270,23 @@ public static class ConfigService
             try
             {
                 TomlTable doc = Toml.ToModel(File.ReadAllText(sidePath, Encoding.UTF8));
-                TomlTable source = doc.TryGetValue("profile", out object? sub) && sub is TomlTable subTbl ? subTbl : doc;
-                var p = ParseProfileTable(source);
-                if (string.IsNullOrWhiteSpace(p.Name))
+                var profiles = new List<LepProfile>();
+                if (doc.TryGetValue("profiles", out object? arrObj) && arrObj is TomlTableArray arr)
                 {
-                    p.Name = Path.GetFileName(targetPath);
+                    foreach (TomlTable item in arr)
+                    {
+                        profiles.Add(ParseProfileTable(item));
+                    }
                 }
-                return new ResolvedAppProfile
+                if (profiles.Count == 0)
                 {
-                    Profile = p,
+                    TomlTable source = doc.TryGetValue("profile", out object? sub) && sub is TomlTable subTbl ? subTbl : doc;
+                    profiles.Add(ParseProfileTable(source));
+                }
+                EnsureNames(profiles, targetPath);
+                return new ResolvedAppProfiles
+                {
+                    Profiles = profiles,
                     Storage = AppProfileStorage.AlongsideTarget,
                     ConfigFilePath = sidePath,
                 };
@@ -278,17 +297,16 @@ public static class ConfigService
         }
 
         string norm = SystemService.NormalizePathForMatch(targetPath);
-        var match = globalConfig.AppProfiles.FirstOrDefault(e => SystemService.NormalizePathForMatch(e.TargetPath) == norm);
-        if (match is not null)
+        var matches = globalConfig.AppProfiles
+            .Where(e => SystemService.NormalizePathForMatch(e.TargetPath) == norm)
+            .Select(e => e.Profile.Clone())
+            .ToList();
+        if (matches.Count > 0)
         {
-            var p = match.Profile.Clone();
-            if (string.IsNullOrWhiteSpace(p.Name))
+            EnsureNames(matches, targetPath);
+            return new ResolvedAppProfiles
             {
-                p.Name = Path.GetFileName(targetPath);
-            }
-            return new ResolvedAppProfile
-            {
-                Profile = p,
+                Profiles = matches,
                 Storage = AppProfileStorage.GlobalConfig,
                 ConfigFilePath = "",
             };
@@ -297,41 +315,73 @@ public static class ConfigService
         return null;
     }
 
-    public static string SerializeAppProfileToml(LepProfile profile)
+    public static ResolvedAppProfile? FindAppProfile(string targetPath, GlobalConfig globalConfig)
     {
+        var resolved = FindAppProfiles(targetPath, globalConfig);
+        if (resolved is null || resolved.Profiles.Count == 0)
+        {
+            return null;
+        }
+        return new ResolvedAppProfile
+        {
+            Profile = resolved.Profiles[0],
+            Storage = resolved.Storage,
+            ConfigFilePath = resolved.ConfigFilePath,
+        };
+    }
+
+    public static string SerializeAppProfilesToml(IReadOnlyList<LepProfile> profiles)
+    {
+        var profArr = new TomlTableArray();
+        foreach (var p in profiles)
+        {
+            profArr.Add(BuildProfileTable(p, includeMenuFlag: false));
+        }
         var doc = new TomlTable
         {
             ["version"] = SystemService.AppVersion,
-            ["profile"] = BuildProfileTable(profile, includeMenuFlag: false),
+            ["profiles"] = profArr,
         };
         return "# Locale Emulator Plus 程序专属配置文件\n" + Toml.FromModel(doc);
     }
 
-    public static void SaveAppProfileAlongside(string targetPath, LepProfile profile)
+    public static string SerializeAppProfileToml(LepProfile profile) =>
+        SerializeAppProfilesToml([profile]);
+
+    public static void SaveAppProfilesAlongside(string targetPath, IReadOnlyList<LepProfile> profiles)
     {
         string sidePath = AlongsideAppConfigPath(targetPath);
-        WriteTextAtomic(sidePath, SerializeAppProfileToml(profile));
+        WriteTextAtomic(sidePath, SerializeAppProfilesToml(profiles));
     }
 
-    public static void SaveAppProfileInGlobal(string globalConfigPath, GlobalConfig globalConfig, string targetPath, LepProfile profile)
+    public static void SaveAppProfileAlongside(string targetPath, LepProfile profile) =>
+        SaveAppProfilesAlongside(targetPath, [profile]);
+
+    public static void SaveAppProfilesInGlobal(
+        string globalConfigPath,
+        GlobalConfig globalConfig,
+        string targetPath,
+        IReadOnlyList<LepProfile> profiles)
     {
         string norm = SystemService.NormalizePathForMatch(targetPath);
-        var existing = globalConfig.AppProfiles.FirstOrDefault(e => SystemService.NormalizePathForMatch(e.TargetPath) == norm);
-        if (existing is not null)
+        int insertIndex = globalConfig.AppProfiles.FindIndex(e => SystemService.NormalizePathForMatch(e.TargetPath) == norm);
+        globalConfig.AppProfiles.RemoveAll(e => SystemService.NormalizePathForMatch(e.TargetPath) == norm);
+        if (insertIndex < 0 || insertIndex > globalConfig.AppProfiles.Count)
         {
-            existing.TargetPath = targetPath;
-            existing.Profile = profile.Clone();
+            insertIndex = globalConfig.AppProfiles.Count;
         }
-        else
+
+        var entries = profiles.Select(p => new AppProfileEntry
         {
-            globalConfig.AppProfiles.Add(new AppProfileEntry
-            {
-                TargetPath = targetPath,
-                Profile = profile.Clone(),
-            });
-        }
+            TargetPath = targetPath,
+            Profile = p.Clone(),
+        });
+        globalConfig.AppProfiles.InsertRange(insertIndex, entries);
         SaveGlobalConfig(globalConfigPath, globalConfig);
     }
+
+    public static void SaveAppProfileInGlobal(string globalConfigPath, GlobalConfig globalConfig, string targetPath, LepProfile profile) =>
+        SaveAppProfilesInGlobal(globalConfigPath, globalConfig, targetPath, [profile]);
 
     public static void RemoveGlobalAppProfileEntry(string globalConfigPath, GlobalConfig globalConfig, string targetPath)
     {

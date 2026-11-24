@@ -135,6 +135,20 @@ private:
     HFONT m_font = nullptr;
     HFONT m_boldFont = nullptr;
 
+    struct LaunchProfileChoice
+    {
+        bool isAppProfile = false;
+        std::wstring name;
+        Profile profile;
+    };
+
+    struct GlobalAppGroup
+    {
+        std::wstring targetPath;
+        size_t count = 0;
+        std::wstring firstLocale;
+    };
+
     // 页 1 控件句柄
     HWND m_launchTargetEdit = nullptr;
     HWND m_launchProfileCombo = nullptr;
@@ -143,6 +157,8 @@ private:
     HWND m_launchAppProfileBtn = nullptr;
     HWND m_launchDeleteAppBtn = nullptr;
     HWND m_launchAppStatusLabel = nullptr;
+    std::vector<LaunchProfileChoice> m_launchChoices;
+    size_t m_launchAppProfileCount = 0;
 
     // 页 2 控件句柄
     HWND m_profList = nullptr;
@@ -161,6 +177,7 @@ private:
     HWND m_globalAppEditBtn = nullptr;
     HWND m_globalAppDelBtn = nullptr;
     int m_selectedProfileIndex = -1;
+    std::vector<GlobalAppGroup> m_globalAppGroups;
 
     // 页 3 控件句柄
     HWND m_shellUserStatus = nullptr;

@@ -61,6 +61,13 @@ struct ResolvedAppProfile
     fs::path configFilePath;
 };
 
+struct ResolvedAppProfiles
+{
+    std::vector<Profile> profiles;
+    AppProfileStorage storage = AppProfileStorage::None;
+    fs::path configFilePath;
+};
+
 // 生成默认的日本语 / 繁体中文预置全局配置
 GlobalConfig createDefaultGlobalConfig();
 Profile createDefaultProfile(std::wstring_view name = L"日本语");
@@ -76,10 +83,25 @@ std::expected<void, std::wstring> saveGlobalConfig(const fs::path& configPath, c
 // 按名称查找全局配置（大小写不敏感）
 std::optional<Profile> findGlobalProfileByName(const GlobalConfig& config, std::wstring_view name);
 
-// 单程序专属配置查找：同目录 .lep.toml 优先于全局 [[app_profiles]]
+// 单程序多专属配置查找：同目录 .lep.toml 优先于全局 [[app_profiles]]（向下兼容旧版单 [profile]）
+std::optional<ResolvedAppProfiles> findAppProfiles(const fs::path& targetPath, const GlobalConfig& globalConfig);
+std::optional<Profile> findAppProfileByName(const fs::path& targetPath, const GlobalConfig& globalConfig, std::wstring_view name);
 std::optional<ResolvedAppProfile> findAppProfile(const fs::path& targetPath, const GlobalConfig& globalConfig);
 
-// 保存/删除单程序专属配置
+// 保存/删除单程序专属配置（支持多配置）
+std::expected<fs::path, std::wstring> saveAppProfilesToFile(
+    const fs::path& outputPath,
+    std::span<const Profile> profiles,
+    const fs::path& existingTemplatePath = {});
+std::expected<fs::path, std::wstring> saveAppProfilesAlongside(
+    const fs::path& targetPath,
+    std::span<const Profile> profiles);
+std::expected<void, std::wstring> saveAppProfilesInGlobal(
+    const fs::path& globalConfigPath,
+    GlobalConfig& globalConfig,
+    const fs::path& targetPath,
+    std::span<const Profile> profiles);
+
 std::expected<fs::path, std::wstring> saveAppProfileToFile(
     const fs::path& outputPath,
     const Profile& profile,

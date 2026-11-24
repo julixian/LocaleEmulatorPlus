@@ -14,7 +14,7 @@ namespace LEPWinUI.Services;
 
 public static class SystemService
 {
-    public const string AppVersion = "3.0.1";
+    public const string AppVersion = "3.0.2";
     public const string ShellExtClsid = "{A84F3C21-6E9D-4B2A-9F1E-3D7C5B8A2030}";
     public const string SparsePackageName = "julixian.LocaleEmulatorPlus.ShellExt";
 

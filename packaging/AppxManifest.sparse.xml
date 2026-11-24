@@ -12,7 +12,7 @@
   <Identity
     Name="julixian.LocaleEmulatorPlus.ShellExt"
     Publisher="CN=LocaleEmulatorPlus"
-    Version="3.0.1.0"
+    Version="3.0.2.0"
     ProcessorArchitecture="x64" />
 
   <Properties>

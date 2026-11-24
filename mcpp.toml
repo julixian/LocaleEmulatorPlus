@@ -2,7 +2,7 @@
 members = ["LEPCommon", "LEPHelper", "LEPShellExt", "LEP"]
 
 [workspace.package]
-version = "3.0.1"
+version = "3.0.2"
 standard = "c++23"
 license = "GPL-3.0-or-later"
 mcpp = ">=2026.10.10.1"

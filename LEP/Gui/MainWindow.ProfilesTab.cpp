@@ -20,23 +20,23 @@ void MainWindow::buildProfilesTab(const HWND page)
 
     // 左侧：全局配置列表
     createLabel(page, m_boldFont, m_i18n.tr("profiles", "global_list"), margin, margin, leftW, s(20));
-    m_profList = createListBox(page, m_font, margin, margin + s(22), leftW, s(210), kIdProfList);
+    m_profList = createListBox(page, m_font, margin, margin + s(22), leftW, s(154), kIdProfList);
 
-    const int btnY = margin + s(238);
+    const int btnY = margin + s(182);
     createButton(page, m_font, m_i18n.tr("profiles", "add"), margin, btnY, s(64), s(26), kIdProfAddBtn);
     createButton(page, m_font, m_i18n.tr("profiles", "duplicate"), margin + s(70), btnY, s(64), s(26), kIdProfDupBtn);
     createButton(page, m_font, m_i18n.tr("profiles", "delete"), margin + s(140), btnY, s(65), s(26), kIdProfDelBtn);
 
-    const int btnY2 = btnY + s(32);
+    const int btnY2 = btnY + s(30);
     createButton(page, m_font, m_i18n.tr("profiles", "move_up"), margin, btnY2, s(98), s(26), kIdProfUpBtn);
     createButton(page, m_font, m_i18n.tr("profiles", "move_down"), margin + s(106), btnY2, s(99), s(26), kIdProfDownBtn);
 
-    // 左下方：全局中保存的程序专属配置（如 ISO 只读目录回退保存项）
-    const int appListY = btnY2 + s(38);
+    // 左下方：全局中保存的程序专属配置（位置上提并拉高展示空间）
+    const int appListY = btnY2 + s(34);
     createLabel(page, m_boldFont, m_i18n.tr("profiles", "app_list"), margin, appListY, leftW, s(20));
-    m_globalAppList = createListBox(page, m_font, margin, appListY + s(22), leftW, s(82), kIdGlobalAppList);
-    m_globalAppEditBtn = createButton(page, m_font, m_i18n.tr("profiles", "edit_selected_app"), margin, appListY + s(108), s(98), s(26), kIdGlobalAppEditBtn);
-    m_globalAppDelBtn = createButton(page, m_font, m_i18n.tr("profiles", "remove_selected_app"), margin + s(106), appListY + s(108), s(99), s(26), kIdGlobalAppDelBtn);
+    m_globalAppList = createListBox(page, m_font, margin, appListY + s(22), leftW, s(144), kIdGlobalAppList);
+    m_globalAppEditBtn = createButton(page, m_font, m_i18n.tr("profiles", "edit_selected_app"), margin, appListY + s(170), s(98), s(26), kIdGlobalAppEditBtn);
+    m_globalAppDelBtn = createButton(page, m_font, m_i18n.tr("profiles", "remove_selected_app"), margin + s(106), appListY + s(170), s(99), s(26), kIdGlobalAppDelBtn);
 
     // 右侧：当前选中全局配置编辑表单
     const int labelW = s(122);
@@ -125,12 +125,30 @@ void MainWindow::refreshProfilesTab()
     }
 
     SendMessageW(m_globalAppList, LB_RESETCONTENT, 0, 0);
+    m_globalAppGroups.clear();
     for (const auto& entry : m_config.appProfiles) {
-        const fs::path p(entry.targetPath);
-        const std::wstring label = std::format(L"{} ({})", p.filename().wstring(), entry.profile.locale);
+        const std::wstring norm = normalizePathForMatch(entry.targetPath);
+        auto it = std::find_if(m_globalAppGroups.begin(), m_globalAppGroups.end(),
+            [&](const GlobalAppGroup& g) { return normalizePathForMatch(g.targetPath) == norm; });
+        if (it == m_globalAppGroups.end()) {
+            m_globalAppGroups.push_back(GlobalAppGroup{
+                .targetPath = entry.targetPath,
+                .count = 1,
+                .firstLocale = entry.profile.locale,
+            });
+        }
+        else {
+            ++it->count;
+        }
+    }
+    for (const auto& group : m_globalAppGroups) {
+        const fs::path p(group.targetPath);
+        const std::wstring label = (group.count > 1)
+            ? std::format(L"{} ({})", p.filename().wstring(), group.count)
+            : std::format(L"{} ({})", p.filename().wstring(), group.firstLocale);
         SendMessageW(m_globalAppList, LB_ADDSTRING, 0, (LPARAM)label.c_str());
     }
-    const bool hasApps = !m_config.appProfiles.empty();
+    const bool hasApps = !m_globalAppGroups.empty();
     if (hasApps) {
         SendMessageW(m_globalAppList, LB_SETCURSEL, 0, 0);
     }
@@ -300,7 +318,10 @@ bool MainWindow::handleProfilesCommand(const WORD id, const WORD notifyCode)
             MessageBoxW(m_hwnd, res.error().c_str(), m_i18n.tr("app", "error").c_str(), MB_OK | MB_ICONERROR);
         }
         else {
-            setStatus(m_i18n.tr("profiles", "saved_ok"));
+            SYSTEMTIME st{};
+            GetLocalTime(&st);
+            setStatus(std::format(L"{} (config.toml · {:02d}:{:02d}:{:02d})",
+                m_i18n.tr("profiles", "saved_ok"), st.wHour, st.wMinute, st.wSecond));
             refreshProfilesTab();
             refreshLaunchTab();
         }
@@ -309,8 +330,8 @@ bool MainWindow::handleProfilesCommand(const WORD id, const WORD notifyCode)
 
     if (id == kIdGlobalAppEditBtn || (id == kIdGlobalAppList && notifyCode == LBN_DBLCLK)) {
         const LRESULT idx = SendMessageW(m_globalAppList, LB_GETCURSEL, 0, 0);
-        if (idx >= 0 && (size_t)idx < m_config.appProfiles.size()) {
-            const fs::path target(m_config.appProfiles[(size_t)idx].targetPath);
+        if (idx >= 0 && (size_t)idx < m_globalAppGroups.size()) {
+            const fs::path target(m_globalAppGroups[(size_t)idx].targetPath);
             const auto res = showAppProfileDialog(
                 m_hwnd, m_appDir, m_configPath, m_config, m_i18n, m_locales, m_timezones, target);
             if (res.changed) {
@@ -323,11 +344,15 @@ bool MainWindow::handleProfilesCommand(const WORD id, const WORD notifyCode)
 
     if (id == kIdGlobalAppDelBtn) {
         const LRESULT idx = SendMessageW(m_globalAppList, LB_GETCURSEL, 0, 0);
-        if (idx >= 0 && (size_t)idx < m_config.appProfiles.size()) {
+        if (idx >= 0 && (size_t)idx < m_globalAppGroups.size()) {
             if (MessageBoxW(m_hwnd, m_i18n.tr("profiles", "confirm_delete_app").c_str(),
                     m_i18n.tr("app", "confirm").c_str(), MB_YESNO | MB_ICONQUESTION) == IDYES)
             {
-                m_config.appProfiles.erase(m_config.appProfiles.begin() + idx);
+                const std::wstring norm = normalizePathForMatch(m_globalAppGroups[(size_t)idx].targetPath);
+                std::erase_if(m_config.appProfiles, [&](const AppProfileEntry& e)
+                    {
+                        return normalizePathForMatch(e.targetPath) == norm;
+                    });
                 (void)saveGlobalConfig(m_configPath, m_config);
                 setStatus(m_i18n.tr("profiles", "app_profile_deleted"));
                 refreshProfilesTab();

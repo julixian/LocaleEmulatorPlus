@@ -15,10 +15,16 @@ NAMESPACE_BEGIN(lep)
 std::wstring buildLaunchArguments(
     const fs::path& targetPath,
     const std::optional<std::wstring_view> profileName,
-    const std::wstring_view extraArguments)
+    const std::wstring_view extraArguments,
+    const std::optional<std::wstring_view> appProfileName)
 {
     std::wstring args = L"run ";
-    if (profileName && !profileName->empty()) {
+    if (appProfileName && !appProfileName->empty()) {
+        args += L"--app-profile ";
+        args += quoteCommandLineArg(*appProfileName);
+        args += L" ";
+    }
+    else if (profileName && !profileName->empty()) {
         args += L"--profile ";
         args += quoteCommandLineArg(*profileName);
         args += L" ";
@@ -37,10 +43,11 @@ std::wstring buildFullLaunchCommandLine(
     const fs::path& lepExePath,
     const fs::path& targetPath,
     const std::optional<std::wstring_view> profileName,
-    const std::wstring_view extraArguments)
+    const std::wstring_view extraArguments,
+    const std::optional<std::wstring_view> appProfileName)
 {
     return quoteCommandLineArg(lepExePath.wstring()) + L" " +
-        buildLaunchArguments(targetPath, profileName, extraArguments);
+        buildLaunchArguments(targetPath, profileName, extraArguments, appProfileName);
 }
 
 fs::path suggestDefaultShortcutPath(const fs::path& targetPath)
@@ -79,7 +86,10 @@ std::expected<fs::path, std::wstring> createShortcut(const ShortcutRequest& req)
     const std::optional<std::wstring_view> profView = req.profileName
         ? std::optional<std::wstring_view>(*req.profileName)
         : std::nullopt;
-    const std::wstring args = buildLaunchArguments(req.targetPath, profView, req.extraArguments);
+    const std::optional<std::wstring_view> appProfView = req.appProfileName
+        ? std::optional<std::wstring_view>(*req.appProfileName)
+        : std::nullopt;
+    const std::wstring args = buildLaunchArguments(req.targetPath, profView, req.extraArguments, appProfView);
     const std::wstring desc = req.description.empty()
         ? std::format(L"使用 Locale Emulator Plus 运行 {}", req.targetPath.filename().wstring())
         : req.description;

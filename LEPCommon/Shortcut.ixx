@@ -16,7 +16,8 @@ struct ShortcutRequest
     fs::path lepExePath;
     fs::path targetPath;
     fs::path shortcutOutputPath;
-    std::optional<std::wstring> profileName; // nullopt 表示使用默认优先级（程序专属 > 首个全局）
+    std::optional<std::wstring> profileName;    // 全局配置名（--profile）
+    std::optional<std::wstring> appProfileName; // 程序专属配置名（--app-profile），优先于 profileName
     std::wstring extraArguments;
     std::wstring description;
 };
@@ -25,13 +26,15 @@ struct ShortcutRequest
 std::wstring buildLaunchArguments(
     const fs::path& targetPath,
     std::optional<std::wstring_view> profileName = std::nullopt,
-    std::wstring_view extraArguments = L"");
+    std::wstring_view extraArguments = L"",
+    std::optional<std::wstring_view> appProfileName = std::nullopt);
 
 std::wstring buildFullLaunchCommandLine(
     const fs::path& lepExePath,
     const fs::path& targetPath,
     std::optional<std::wstring_view> profileName = std::nullopt,
-    std::wstring_view extraArguments = L"");
+    std::wstring_view extraArguments = L"",
+    std::optional<std::wstring_view> appProfileName = std::nullopt);
 
 // 创建标准 Windows .lnk 快捷方式，自动沿用目标程序图标与工作目录
 std::expected<fs::path, std::wstring> createShortcut(const ShortcutRequest& req);

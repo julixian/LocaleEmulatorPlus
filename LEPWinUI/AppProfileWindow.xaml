@@ -21,53 +21,98 @@
             </StackPanel>
         </Grid>
 
-        <ScrollViewer Grid.Row="1" Padding="20,6,20,12">
-            <StackPanel Spacing="14">
-                <InfoBar x:Name="StatusInfoBar" IsOpen="False" IsClosable="True" />
+        <Grid Grid.Row="1" Padding="20,6,20,12" ColumnSpacing="16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="230" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
 
-                <Border Style="{StaticResource CardBorderStyle}">
-                    <StackPanel Spacing="12">
-                        <TextBox x:Name="TargetPathBox" IsReadOnly="True" />
+            <!-- 左侧：此程序的多个专属配置列表 -->
+            <Border Grid.Column="0" Style="{StaticResource CardBorderStyle}" Padding="12">
+                <Grid RowSpacing="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock x:Name="AppProfilesListHeader" Grid.Row="0" FontWeight="SemiBold" />
+                    <ListView
+                        x:Name="AppProfilesList"
+                        Grid.Row="1"
+                        SelectionMode="Single"
+                        SelectionChanged="AppProfilesList_SelectionChanged" />
+                    <Grid Grid.Row="2" ColumnSpacing="6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="AddProfBtn" Grid.Column="0" HorizontalAlignment="Stretch" Click="AddProfBtn_Click" />
+                        <Button x:Name="DupProfBtn" Grid.Column="1" HorizontalAlignment="Stretch" Click="DupProfBtn_Click" />
+                        <Button x:Name="DelProfBtn" Grid.Column="2" HorizontalAlignment="Stretch" Click="DelProfBtn_Click" />
+                    </Grid>
+                    <Grid Grid.Row="3" ColumnSpacing="6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="UpProfBtn" Grid.Column="0" HorizontalAlignment="Stretch" Click="UpProfBtn_Click" />
+                        <Button x:Name="DownProfBtn" Grid.Column="1" HorizontalAlignment="Stretch" Click="DownProfBtn_Click" />
+                    </Grid>
+                </Grid>
+            </Border>
 
-                        <Grid ColumnSpacing="12">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <ComboBox x:Name="LocaleCombo" Grid.Column="0" HorizontalAlignment="Stretch" />
-                            <ComboBox x:Name="TimezoneCombo" Grid.Column="1" HorizontalAlignment="Stretch" />
-                        </Grid>
+            <!-- 右侧：当前选中的专属配置编辑表单与保存位置 -->
+            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="14">
+                    <InfoBar x:Name="StatusInfoBar" IsOpen="False" IsClosable="True" />
 
-                        <ComboBox x:Name="RegModeCombo" HorizontalAlignment="Stretch" />
-                        <ComboBox x:Name="UiModeCombo" HorizontalAlignment="Stretch" />
+                    <Border Style="{StaticResource CardBorderStyle}">
+                        <StackPanel Spacing="12">
+                            <TextBox x:Name="TargetPathBox" IsReadOnly="True" />
+                            <TextBox x:Name="NameBox" TextChanged="NameBox_TextChanged" />
 
-                        <TextBox x:Name="ArgsBox" />
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <ComboBox x:Name="LocaleCombo" Grid.Column="0" HorizontalAlignment="Stretch" />
+                                <ComboBox x:Name="TimezoneCombo" Grid.Column="1" HorizontalAlignment="Stretch" />
+                            </Grid>
 
-                        <Grid ColumnSpacing="12">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <TextBox x:Name="StdOverrideBox" Grid.Column="0" />
-                            <TextBox x:Name="DstOverrideBox" Grid.Column="1" />
-                        </Grid>
+                            <ComboBox x:Name="RegModeCombo" HorizontalAlignment="Stretch" />
+                            <ComboBox x:Name="UiModeCombo" HorizontalAlignment="Stretch" />
 
-                        <StackPanel Orientation="Horizontal" Spacing="24" Margin="0,4,0,0">
-                            <ToggleSwitch x:Name="RunAsAdminToggle" />
-                            <ToggleSwitch x:Name="RunSuspendedToggle" />
+                            <TextBox x:Name="ArgsBox" />
+
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="StdOverrideBox" Grid.Column="0" />
+                                <TextBox x:Name="DstOverrideBox" Grid.Column="1" />
+                            </Grid>
+
+                            <StackPanel Orientation="Horizontal" Spacing="24" Margin="0,4,0,0">
+                                <ToggleSwitch x:Name="RunAsAdminToggle" />
+                                <ToggleSwitch x:Name="RunSuspendedToggle" />
+                            </StackPanel>
                         </StackPanel>
-                    </StackPanel>
-                </Border>
+                    </Border>
 
-                <Border Style="{StaticResource CardBorderStyle}">
-                    <StackPanel Spacing="8">
-                        <TextBlock x:Name="StorageGroupTitle" Style="{StaticResource SectionHeaderTextStyle}" Margin="0,0,0,4" />
-                        <RadioButton x:Name="LocalStorageRadio" GroupName="AppStorage" />
-                        <RadioButton x:Name="GlobalStorageRadio" GroupName="AppStorage" />
-                    </StackPanel>
-                </Border>
-            </StackPanel>
-        </ScrollViewer>
+                    <Border Style="{StaticResource CardBorderStyle}">
+                        <StackPanel Spacing="8">
+                            <TextBlock x:Name="StorageGroupTitle" Style="{StaticResource SectionHeaderTextStyle}" Margin="0,0,0,4" />
+                            <RadioButton x:Name="LocalStorageRadio" GroupName="AppStorage" />
+                            <RadioButton x:Name="GlobalStorageRadio" GroupName="AppStorage" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
 
         <Border
             Grid.Row="2"

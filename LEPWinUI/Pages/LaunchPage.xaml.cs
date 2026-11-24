@@ -12,9 +12,13 @@ namespace LEPWinUI.Pages;
 
 public sealed partial class LaunchPage : Page
 {
+    private sealed record LaunchChoice(bool IsAppProfile, string Name, string Display);
+
     private MainWindow? _hostWindow;
     private readonly AppState _state = App.State;
     private bool _suppressSelection;
+    private List<LaunchChoice> _choices = new();
+    private int _appProfileCount;
 
     public LaunchPage()
     {
@@ -68,31 +72,50 @@ public sealed partial class LaunchPage : Page
         string target = TargetPathBox.Text.Trim();
         _state.CurrentLaunchTarget = target;
 
-        var appProf = !string.IsNullOrEmpty(target) ? ConfigService.FindAppProfile(target, _state.Config) : null;
+        var appProfs = !string.IsNullOrEmpty(target) ? ConfigService.FindAppProfiles(target, _state.Config) : null;
 
         _suppressSelection = true;
         int prevSel = ProfileCombo.SelectedIndex;
-        var items = new List<string>();
-        if (appProf is not null)
+        var choices = new List<LaunchChoice>();
+        _appProfileCount = 0;
+
+        if (appProfs is not null && appProfs.Profiles.Count > 0)
         {
-            items.Add(i18n.Tr("launch", "app_profile_item"));
+            _appProfileCount = appProfs.Profiles.Count;
+            bool multi = _appProfileCount > 1;
+            string fileName = Path.GetFileName(target);
+            foreach (var p in appProfs.Profiles)
+            {
+                bool showNamed = multi || (!string.IsNullOrWhiteSpace(p.Name) && !p.Name.Equals(fileName, StringComparison.OrdinalIgnoreCase));
+                string display = showNamed
+                    ? i18n.TrFormat("launch", "app_profile_item_named", "{name}", p.Name, $"[专属] {p.Name}")
+                    : i18n.Tr("launch", "app_profile_item");
+                choices.Add(new LaunchChoice(IsAppProfile: true, Name: p.Name, Display: display));
+            }
         }
         foreach (var p in _state.Config.Profiles)
         {
-            items.Add(p.Name);
+            choices.Add(new LaunchChoice(IsAppProfile: false, Name: p.Name, Display: p.Name));
         }
-        ProfileCombo.ItemsSource = items;
-        if (items.Count > 0)
+
+        _choices = choices;
+        ProfileCombo.ItemsSource = choices.ConvertAll(c => c.Display);
+        if (choices.Count > 0)
         {
-            ProfileCombo.SelectedIndex = (prevSel >= 0 && prevSel < items.Count) ? prevSel : 0;
+            ProfileCombo.SelectedIndex = (prevSel >= 0 && prevSel < choices.Count) ? prevSel : 0;
         }
         _suppressSelection = false;
 
-        if (appProf is not null)
+        if (appProfs is not null && appProfs.Profiles.Count > 0)
         {
-            AppProfileStatusText.Text = appProf.Storage == AppProfileStorage.AlongsideTarget
-                ? i18n.Tr("launch", "app_profile_status_local") + Path.GetFileName(appProf.ConfigFilePath)
+            string statusText = appProfs.Storage == AppProfileStorage.AlongsideTarget
+                ? i18n.Tr("launch", "app_profile_status_local") + Path.GetFileName(appProfs.ConfigFilePath)
                 : i18n.Tr("launch", "app_profile_status_global");
+            if (appProfs.Profiles.Count > 1)
+            {
+                statusText += $" ({appProfs.Profiles.Count})";
+            }
+            AppProfileStatusText.Text = statusText;
             EditAppProfileBtn.Content = i18n.Tr("launch", "edit_app_profile");
             DeleteAppProfileBtn.IsEnabled = true;
         }
@@ -107,20 +130,19 @@ public sealed partial class LaunchPage : Page
         UpdateCommandPreview();
     }
 
-    private string? GetSelectedGlobalProfileName(ResolvedAppProfile? appProf)
+    private (string? GlobalProfile, string? AppProfile) GetSelectedProfileArgs()
     {
         int sel = ProfileCombo.SelectedIndex;
-        if (sel < 0)
+        if (sel < 0 || sel >= _choices.Count)
         {
-            return null;
+            return (null, null);
         }
-        if (appProf is not null)
+        var choice = _choices[sel];
+        if (choice.IsAppProfile)
         {
-            if (sel == 0) return null;
-            int idx = sel - 1;
-            return idx >= 0 && idx < _state.Config.Profiles.Count ? _state.Config.Profiles[idx].Name : null;
+            return (null, _appProfileCount > 1 ? choice.Name : null);
         }
-        return sel < _state.Config.Profiles.Count ? _state.Config.Profiles[sel].Name : null;
+        return (choice.Name, null);
     }
 
     private void UpdateCommandPreview()
@@ -131,9 +153,8 @@ public sealed partial class LaunchPage : Page
             CommandPreviewBox.Text = "";
             return;
         }
-        var appProf = ConfigService.FindAppProfile(target, _state.Config);
-        string? profName = GetSelectedGlobalProfileName(appProf);
-        CommandPreviewBox.Text = NativeBridgeService.BuildLaunchCommandPreview(_state.AppDir, target, profName, ExtraArgsBox.Text);
+        var (globalProf, appProf) = GetSelectedProfileArgs();
+        CommandPreviewBox.Text = NativeBridgeService.BuildLaunchCommandPreview(_state.AppDir, target, globalProf, ExtraArgsBox.Text, appProf);
     }
 
     private void ShowInfo(string message, InfoBarSeverity severity)
@@ -236,9 +257,8 @@ public sealed partial class LaunchPage : Page
             return;
         }
 
-        var appProf = ConfigService.FindAppProfile(target, _state.Config);
-        string? profName = GetSelectedGlobalProfileName(appProf);
-        var res = NativeBridgeService.LaunchTarget(_state.AppDir, target, profName, ExtraArgsBox.Text);
+        var (globalProf, appProf) = GetSelectedProfileArgs();
+        var res = NativeBridgeService.LaunchTarget(_state.AppDir, target, globalProf, ExtraArgsBox.Text, appProf);
         if (!res.Ok)
         {
             ShowInfo(i18n.Tr("launch", "launch_failed") + res.Error, InfoBarSeverity.Error);
@@ -267,9 +287,8 @@ public sealed partial class LaunchPage : Page
             return;
         }
 
-        var appProf = ConfigService.FindAppProfile(target, _state.Config);
-        string? profName = GetSelectedGlobalProfileName(appProf);
-        var res = await NativeBridgeService.CreateShortcutAsync(_state.AppDir, target, outPath, profName, ExtraArgsBox.Text);
+        var (globalProf, appProf) = GetSelectedProfileArgs();
+        var res = await NativeBridgeService.CreateShortcutAsync(_state.AppDir, target, outPath, globalProf, ExtraArgsBox.Text, appProf);
         if (!res.Ok)
         {
             ShowInfo(i18n.Tr("launch", "shortcut_failed") + res.OutputOrError, InfoBarSeverity.Error);

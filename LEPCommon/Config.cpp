@@ -292,53 +292,104 @@ std::optional<Profile> findGlobalProfileByName(const GlobalConfig& config, const
     return std::nullopt;
 }
 
-std::optional<ResolvedAppProfile> findAppProfile(const fs::path& targetPath, const GlobalConfig& globalConfig)
+std::optional<ResolvedAppProfiles> findAppProfiles(const fs::path& targetPath, const GlobalConfig& globalConfig)
 {
     if (targetPath.empty()) {
         return std::nullopt;
     }
+
+    auto ensureProfileNamesFunc = [&](std::vector<Profile>& list)
+        {
+            for (size_t i = 0; i < list.size(); ++i) {
+                if (trimW(list[i].name).empty()) {
+                    list[i].name = (list.size() == 1)
+                        ? targetPath.filename().wstring()
+                        : std::format(L"Profile {}", i + 1);
+                }
+            }
+        };
 
     // 1. 优先检查目标同目录的 <target>.lep.toml
     const fs::path sidePath = alongsideAppConfigPath(targetPath);
     std::error_code ec;
     if (fs::is_regular_file(sidePath, ec)) {
         if (const auto parsed = tomlkit::tryParseFile(sidePath)) {
-            const tomlkit::Item* pTable = parsed->find("profile");
-            const tomlkit::Item& sourceTable = (pTable && pTable->isTable()) ? *pTable : *parsed;
-            Profile p = parseProfileTable(sourceTable);
-            if (p.name.empty()) {
-                p.name = targetPath.filename().wstring();
+            std::vector<Profile> profiles;
+            if (const auto* pArr = parsed->find("profiles"); pArr && (pArr->isArray() || pArr->isArrayOfTables())) {
+                for (const auto& elem : *pArr) {
+                    if (elem.isTable()) {
+                        profiles.push_back(parseProfileTable(elem));
+                    }
+                }
             }
-            return ResolvedAppProfile{
-                .profile = std::move(p),
+            if (profiles.empty()) {
+                // 向下兼容旧版单 [profile] 表或顶层平铺字段
+                const tomlkit::Item* pTable = parsed->find("profile");
+                const tomlkit::Item& sourceTable = (pTable && pTable->isTable()) ? *pTable : *parsed;
+                profiles.push_back(parseProfileTable(sourceTable));
+            }
+            ensureProfileNamesFunc(profiles);
+            return ResolvedAppProfiles{
+                .profiles = std::move(profiles),
                 .storage = AppProfileStorage::AlongsideTarget,
                 .configFilePath = sidePath,
             };
         }
     }
 
-    // 2. 其次在全局 config.toml 的 [[app_profiles]] 中按规范化路径匹配
+    // 2. 其次在全局 config.toml 的 [[app_profiles]] 中收集同一规范化路径下的全部条目
     const std::wstring targetNorm = normalizePathForMatch(targetPath);
+    std::vector<Profile> globalMatches;
     for (const auto& entry : globalConfig.appProfiles) {
         if (normalizePathForMatch(entry.targetPath) == targetNorm) {
-            Profile p = entry.profile;
-            if (p.name.empty()) {
-                p.name = targetPath.filename().wstring();
-            }
-            return ResolvedAppProfile{
-                .profile = std::move(p),
-                .storage = AppProfileStorage::GlobalConfig,
-                .configFilePath = {},
-            };
+            globalMatches.push_back(entry.profile);
         }
+    }
+    if (!globalMatches.empty()) {
+        ensureProfileNamesFunc(globalMatches);
+        return ResolvedAppProfiles{
+            .profiles = std::move(globalMatches),
+            .storage = AppProfileStorage::GlobalConfig,
+            .configFilePath = {},
+        };
     }
 
     return std::nullopt;
 }
 
-std::expected<fs::path, std::wstring> saveAppProfileToFile(
+std::optional<Profile> findAppProfileByName(
+    const fs::path& targetPath,
+    const GlobalConfig& globalConfig,
+    const std::wstring_view name)
+{
+    const auto resolved = findAppProfiles(targetPath, globalConfig);
+    if (!resolved) {
+        return std::nullopt;
+    }
+    for (const auto& prof : resolved->profiles) {
+        if (equalsIgnoreCaseW(prof.name, name)) {
+            return prof;
+        }
+    }
+    return std::nullopt;
+}
+
+std::optional<ResolvedAppProfile> findAppProfile(const fs::path& targetPath, const GlobalConfig& globalConfig)
+{
+    const auto resolved = findAppProfiles(targetPath, globalConfig);
+    if (!resolved || resolved->profiles.empty()) {
+        return std::nullopt;
+    }
+    return ResolvedAppProfile{
+        .profile = resolved->profiles.front(),
+        .storage = resolved->storage,
+        .configFilePath = resolved->configFilePath,
+    };
+}
+
+std::expected<fs::path, std::wstring> saveAppProfilesToFile(
     const fs::path& outputPath,
-    const Profile& profile,
+    const std::span<const Profile> profiles,
     const fs::path& existingTemplatePath)
 {
     tomlkit::Item doc = tomlkit::Item::document();
@@ -355,7 +406,13 @@ std::expected<fs::path, std::wstring> saveAppProfileToFile(
     }
 
     doc["version"] = wide2Utf8(LEP_APP_VERSION_WSTR);
-    doc["profile"] = buildProfileTable(profile, false);
+    doc.erase("profile");
+
+    auto profilesArr = tomlkit::Item::arrayOfTables();
+    for (const auto& prof : profiles) {
+        profilesArr.push_back(buildProfileTable(prof, false));
+    }
+    doc["profiles"] = std::move(profilesArr);
 
     const auto saved = tomlkit::trySaveFileAtomic(outputPath, doc);
     if (!saved) {
@@ -368,10 +425,65 @@ std::expected<fs::path, std::wstring> saveAppProfileToFile(
     return outputPath;
 }
 
-std::expected<fs::path, std::wstring> saveAppProfileAlongside(const fs::path& targetPath, const Profile& profile)
+std::expected<fs::path, std::wstring> saveAppProfilesAlongside(
+    const fs::path& targetPath,
+    const std::span<const Profile> profiles)
 {
     const fs::path sidePath = alongsideAppConfigPath(targetPath);
-    return saveAppProfileToFile(sidePath, profile, sidePath);
+    return saveAppProfilesToFile(sidePath, profiles, sidePath);
+}
+
+std::expected<void, std::wstring> saveAppProfilesInGlobal(
+    const fs::path& globalConfigPath,
+    GlobalConfig& globalConfig,
+    const fs::path& targetPath,
+    const std::span<const Profile> profiles)
+{
+    const std::wstring targetNorm = normalizePathForMatch(targetPath);
+    size_t insertPos = globalConfig.appProfiles.size();
+    for (size_t i = 0; i < globalConfig.appProfiles.size(); ++i) {
+        if (normalizePathForMatch(globalConfig.appProfiles[i].targetPath) == targetNorm) {
+            insertPos = i;
+            break;
+        }
+    }
+    std::erase_if(globalConfig.appProfiles, [&](const AppProfileEntry& entry)
+        {
+            return normalizePathForMatch(entry.targetPath) == targetNorm;
+        });
+    if (insertPos > globalConfig.appProfiles.size()) {
+        insertPos = globalConfig.appProfiles.size();
+    }
+
+    std::vector<AppProfileEntry> newEntries;
+    newEntries.reserve(profiles.size());
+    for (const auto& prof : profiles) {
+        newEntries.push_back(AppProfileEntry{
+            .targetPath = targetPath.wstring(),
+            .profile = prof,
+        });
+    }
+    globalConfig.appProfiles.insert(
+        globalConfig.appProfiles.begin() + (ptrdiff_t)insertPos,
+        std::make_move_iterator(newEntries.begin()),
+        std::make_move_iterator(newEntries.end()));
+
+    return saveGlobalConfig(globalConfigPath, globalConfig);
+}
+
+std::expected<fs::path, std::wstring> saveAppProfileToFile(
+    const fs::path& outputPath,
+    const Profile& profile,
+    const fs::path& existingTemplatePath)
+{
+    const std::array<Profile, 1> one{ profile };
+    return saveAppProfilesToFile(outputPath, one, existingTemplatePath);
+}
+
+std::expected<fs::path, std::wstring> saveAppProfileAlongside(const fs::path& targetPath, const Profile& profile)
+{
+    const std::array<Profile, 1> one{ profile };
+    return saveAppProfilesAlongside(targetPath, one);
 }
 
 std::expected<void, std::wstring> saveAppProfileInGlobal(
@@ -380,23 +492,8 @@ std::expected<void, std::wstring> saveAppProfileInGlobal(
     const fs::path& targetPath,
     const Profile& profile)
 {
-    const std::wstring targetNorm = normalizePathForMatch(targetPath);
-    bool updated = false;
-    for (auto& entry : globalConfig.appProfiles) {
-        if (normalizePathForMatch(entry.targetPath) == targetNorm) {
-            entry.targetPath = targetPath.wstring();
-            entry.profile = profile;
-            updated = true;
-            break;
-        }
-    }
-    if (!updated) {
-        globalConfig.appProfiles.push_back(AppProfileEntry{
-            .targetPath = targetPath.wstring(),
-            .profile = profile,
-        });
-    }
-    return saveGlobalConfig(globalConfigPath, globalConfig);
+    const std::array<Profile, 1> one{ profile };
+    return saveAppProfilesInGlobal(globalConfigPath, globalConfig, targetPath, one);
 }
 
 std::expected<bool, std::wstring> deleteAppProfile(

@@ -90,16 +90,37 @@ void MainWindow::refreshLaunchTab()
 
     const std::wstring targetText = trimW(getControlText(m_launchTargetEdit));
     const fs::path targetPath(targetText);
-    const auto appProf = !targetText.empty() ? findAppProfile(targetPath, m_config) : std::nullopt;
+    const auto appProfs = !targetText.empty() ? findAppProfiles(targetPath, m_config) : std::nullopt;
 
     const LRESULT prevSel = SendMessageW(m_launchProfileCombo, CB_GETCURSEL, 0, 0);
     SendMessageW(m_launchProfileCombo, CB_RESETCONTENT, 0, 0);
+    m_launchChoices.clear();
+    m_launchAppProfileCount = 0;
 
-    if (appProf) {
-        SendMessageW(m_launchProfileCombo, CB_ADDSTRING, 0, (LPARAM)m_i18n.tr("launch", "app_profile_item").c_str());
+    if (appProfs && !appProfs->profiles.empty()) {
+        m_launchAppProfileCount = appProfs->profiles.size();
+        const bool multi = m_launchAppProfileCount > 1;
+        const std::wstring fileName = targetPath.filename().wstring();
+        for (const auto& p : appProfs->profiles) {
+            const bool showNamed = multi || (!p.name.empty() && !equalsIgnoreCaseW(p.name, fileName));
+            const std::wstring display = showNamed
+                ? m_i18n.trFormat("launch", "app_profile_item_named", L"{name}", p.name, L"[专属] " + p.name)
+                : m_i18n.tr("launch", "app_profile_item");
+            SendMessageW(m_launchProfileCombo, CB_ADDSTRING, 0, (LPARAM)display.c_str());
+            m_launchChoices.push_back(LaunchProfileChoice{
+                .isAppProfile = true,
+                .name = p.name,
+                .profile = p,
+            });
+        }
     }
     for (const auto& p : m_config.profiles) {
         SendMessageW(m_launchProfileCombo, CB_ADDSTRING, 0, (LPARAM)p.name.c_str());
+        m_launchChoices.push_back(LaunchProfileChoice{
+            .isAppProfile = false,
+            .name = p.name,
+            .profile = p,
+        });
     }
 
     const LRESULT count = SendMessageW(m_launchProfileCombo, CB_GETCOUNT, 0, 0);
@@ -108,11 +129,14 @@ void MainWindow::refreshLaunchTab()
         SendMessageW(m_launchProfileCombo, CB_SETCURSEL, targetSel, 0);
     }
 
-    if (appProf) {
-        const bool localStorage = (appProf->storage == AppProfileStorage::AlongsideTarget);
-        const std::wstring statusText = localStorage
-            ? (m_i18n.tr("launch", "app_profile_status_local") + appProf->configFilePath.filename().wstring())
+    if (appProfs && !appProfs->profiles.empty()) {
+        const bool localStorage = (appProfs->storage == AppProfileStorage::AlongsideTarget);
+        std::wstring statusText = localStorage
+            ? (m_i18n.tr("launch", "app_profile_status_local") + appProfs->configFilePath.filename().wstring())
             : m_i18n.tr("launch", "app_profile_status_global");
+        if (appProfs->profiles.size() > 1) {
+            statusText += std::format(L" ({})", appProfs->profiles.size());
+        }
         setControlText(m_launchAppStatusLabel, statusText);
         setControlText(m_launchAppProfileBtn, m_i18n.tr("launch", "edit_app_profile"));
         EnableWindow(m_launchDeleteAppBtn, TRUE);
@@ -143,21 +167,24 @@ void MainWindow::updateLaunchCommandPreview()
     }
 
     const fs::path targetPath(targetText);
-    const auto appProf = findAppProfile(targetPath, m_config);
     const LRESULT sel = SendMessageW(m_launchProfileCombo, CB_GETCURSEL, 0, 0);
 
     std::optional<std::wstring_view> profileName;
-    if (appProf) {
-        if (sel > 0 && (size_t)(sel - 1) < m_config.profiles.size()) {
-            profileName = m_config.profiles[(size_t)(sel - 1)].name;
+    std::optional<std::wstring_view> appProfileName;
+    if (sel >= 0 && (size_t)sel < m_launchChoices.size()) {
+        const auto& choice = m_launchChoices[(size_t)sel];
+        if (choice.isAppProfile) {
+            if (m_launchAppProfileCount > 1) {
+                appProfileName = choice.name;
+            }
         }
-    }
-    else if (sel >= 0 && (size_t)sel < m_config.profiles.size()) {
-        profileName = m_config.profiles[(size_t)sel].name;
+        else {
+            profileName = choice.name;
+        }
     }
 
     const std::wstring extraArgs = trimW(getControlText(m_launchArgsEdit));
-    const std::wstring cmd = buildFullLaunchCommandLine(getModuleFilePath(), targetPath, profileName, extraArgs);
+    const std::wstring cmd = buildFullLaunchCommandLine(getModuleFilePath(), targetPath, profileName, extraArgs, appProfileName);
     setControlText(m_launchCmdEdit, cmd);
 }
 
@@ -239,18 +266,11 @@ bool MainWindow::handleLaunchCommand(const WORD id, const WORD notifyCode)
             return true;
         }
         const fs::path targetPath(targetText);
-        const auto appProf = findAppProfile(targetPath, m_config);
         const LRESULT sel = SendMessageW(m_launchProfileCombo, CB_GETCURSEL, 0, 0);
 
         Profile chosenProfile = createDefaultProfile();
-        if (appProf && sel == 0) {
-            chosenProfile = appProf->profile;
-        }
-        else {
-            const size_t idx = appProf ? (size_t)(sel - 1) : (size_t)sel;
-            if (idx < m_config.profiles.size()) {
-                chosenProfile = m_config.profiles[idx];
-            }
+        if (sel >= 0 && (size_t)sel < m_launchChoices.size()) {
+            chosenProfile = m_launchChoices[(size_t)sel].profile;
         }
 
         const auto launchRes = launchTarget(LaunchRequest{
@@ -283,16 +303,19 @@ bool MainWindow::handleLaunchCommand(const WORD id, const WORD notifyCode)
             return true;
         }
 
-        const auto appProf = findAppProfile(targetPath, m_config);
         const LRESULT sel = SendMessageW(m_launchProfileCombo, CB_GETCURSEL, 0, 0);
         std::optional<std::wstring> profileName;
-        if (appProf) {
-            if (sel > 0 && (size_t)(sel - 1) < m_config.profiles.size()) {
-                profileName = m_config.profiles[(size_t)(sel - 1)].name;
+        std::optional<std::wstring> appProfileName;
+        if (sel >= 0 && (size_t)sel < m_launchChoices.size()) {
+            const auto& choice = m_launchChoices[(size_t)sel];
+            if (choice.isAppProfile) {
+                if (m_launchAppProfileCount > 1) {
+                    appProfileName = choice.name;
+                }
             }
-        }
-        else if (sel >= 0 && (size_t)sel < m_config.profiles.size()) {
-            profileName = m_config.profiles[(size_t)sel].name;
+            else {
+                profileName = choice.name;
+            }
         }
 
         const auto res = createShortcut(ShortcutRequest{
@@ -300,6 +323,7 @@ bool MainWindow::handleLaunchCommand(const WORD id, const WORD notifyCode)
             .targetPath = targetPath,
             .shortcutOutputPath = *chosenOut,
             .profileName = profileName,
+            .appProfileName = appProfileName,
             .extraArguments = trimW(getControlText(m_launchArgsEdit)),
         });
         if (!res) {

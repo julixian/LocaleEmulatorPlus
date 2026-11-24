@@ -65,6 +65,12 @@ public sealed class I18nService
         return fallback ?? key;
     }
 
+    public string TrFormat(string section, string key, string placeholder, string value, string? fallback = null)
+    {
+        string template = Tr(section, key, fallback ?? placeholder);
+        return template.Replace(placeholder, value, StringComparison.Ordinal);
+    }
+
     public static List<LanguageOption> AvailableLanguages(string appDir)
     {
         var list = new List<LanguageOption>

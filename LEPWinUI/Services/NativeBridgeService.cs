@@ -12,12 +12,22 @@ public static class NativeBridgeService
 {
     public static string GetLepExePath(string appDir) => Path.Combine(appDir, "LEP.exe");
 
-    public static string BuildLaunchCommandPreview(string appDir, string targetPath, string? profileName, string? extraArgs)
+    public static string BuildLaunchCommandPreview(
+        string appDir,
+        string targetPath,
+        string? profileName,
+        string? extraArgs,
+        string? appProfileName = null)
     {
         var sb = new StringBuilder();
         sb.Append(SystemService.QuoteArg(GetLepExePath(appDir)));
         sb.Append(" run");
-        if (!string.IsNullOrWhiteSpace(profileName))
+        if (!string.IsNullOrWhiteSpace(appProfileName))
+        {
+            sb.Append(" --app-profile ");
+            sb.Append(SystemService.QuoteArg(appProfileName));
+        }
+        else if (!string.IsNullOrWhiteSpace(profileName))
         {
             sb.Append(" --profile ");
             sb.Append(SystemService.QuoteArg(profileName));
@@ -36,7 +46,8 @@ public static class NativeBridgeService
         string appDir,
         string targetPath,
         string? profileName = null,
-        string? extraArgs = null)
+        string? extraArgs = null,
+        string? appProfileName = null)
     {
         string lepExe = GetLepExePath(appDir);
         if (!File.Exists(lepExe))
@@ -45,7 +56,11 @@ public static class NativeBridgeService
         }
 
         var args = new StringBuilder("run");
-        if (!string.IsNullOrWhiteSpace(profileName))
+        if (!string.IsNullOrWhiteSpace(appProfileName))
+        {
+            args.Append(" --app-profile ").Append(SystemService.QuoteArg(appProfileName));
+        }
+        else if (!string.IsNullOrWhiteSpace(profileName))
         {
             args.Append(" --profile ").Append(SystemService.QuoteArg(profileName));
         }
@@ -136,16 +151,16 @@ public static class NativeBridgeService
         });
     }
 
-    public static async Task<(bool Ok, string Error)> WriteAppProfileElevatedAsync(
+    public static async Task<(bool Ok, string Error)> WriteAppProfilesElevatedAsync(
         string appDir,
         string targetPath,
-        LepProfile profile)
+        IReadOnlyList<LepProfile> profiles)
     {
         string sidePath = ConfigService.AlongsideAppConfigPath(targetPath);
         string tempPath = Path.Combine(Path.GetTempPath(), $"lep_profile_{Environment.ProcessId}_{Environment.TickCount64}.lep.toml");
         try
         {
-            File.WriteAllText(tempPath, ConfigService.SerializeAppProfileToml(profile), new UTF8Encoding(false));
+            File.WriteAllText(tempPath, ConfigService.SerializeAppProfilesToml(profiles), new UTF8Encoding(false));
             string args = $"--write-profile-file {SystemService.QuoteArg(sidePath)} {SystemService.QuoteArg(tempPath)}";
             var res = await RunLepCommandAsync(appDir, args, elevate: !SystemService.IsAdministrator());
             return (res.Ok, res.Ok ? "" : res.OutputOrError);
@@ -159,6 +174,12 @@ public static class NativeBridgeService
             try { if (File.Exists(tempPath)) File.Delete(tempPath); } catch { }
         }
     }
+
+    public static Task<(bool Ok, string Error)> WriteAppProfileElevatedAsync(
+        string appDir,
+        string targetPath,
+        LepProfile profile) =>
+        WriteAppProfilesElevatedAsync(appDir, targetPath, [profile]);
 
     public static async Task<(bool Ok, string Error)> DeleteAppProfileWithElevationAsync(
         string appDir,
@@ -197,11 +218,16 @@ public static class NativeBridgeService
         string targetPath,
         string outLnkPath,
         string? profileName,
-        string? extraArgs)
+        string? extraArgs,
+        string? appProfileName = null)
     {
         var sb = new StringBuilder("shortcut ");
         sb.Append(SystemService.QuoteArg(targetPath));
-        if (!string.IsNullOrWhiteSpace(profileName))
+        if (!string.IsNullOrWhiteSpace(appProfileName))
+        {
+            sb.Append(" --app-profile ").Append(SystemService.QuoteArg(appProfileName));
+        }
+        else if (!string.IsNullOrWhiteSpace(profileName))
         {
             sb.Append(" --profile ").Append(SystemService.QuoteArg(profileName));
         }

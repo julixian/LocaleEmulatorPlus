@@ -223,7 +223,13 @@ namespace
 
             case SubAction::RunWithAppProfile:
                 if (!target.empty()) {
-                    launchLepExe(m_appDir, std::format(L"run {}", quoteCommandLineArg(target.wstring())));
+                    if (!m_spec.profileName.empty()) {
+                        launchLepExe(m_appDir, std::format(L"run --app-profile {} {}",
+                            quoteCommandLineArg(m_spec.profileName), quoteCommandLineArg(target.wstring())));
+                    }
+                    else {
+                        launchLepExe(m_appDir, std::format(L"run {}", quoteCommandLineArg(target.wstring())));
+                    }
                 }
                 break;
 
@@ -461,7 +467,9 @@ namespace
             const auto cfgExp = loadGlobalConfigReadOnly(cfgPath);
             I18n i18n;
             i18n.load(m_appDir, cfgExp ? cfgExp->language : L"auto");
-            const std::wstring title = i18n.tr("context_menu", "root_title", L"Locale Emulator Plus");
+            const std::wstring title = isPackagedApp()
+                ? L"LEP Locale Switcher"
+                : i18n.tr("context_menu", "root_title", L"Locale Emulator Plus");
             return SHStrDupW(title.c_str(), ppszName);
         }
 
@@ -573,14 +581,23 @@ namespace
 
             pushItemFunc(SubItemSpec{ .action = SubAction::Separator });
 
-            // 2. 动态感知目标程序是否已有专属配置（同目录 .lep.toml 或全局 [[app_profiles]]）
-            const auto appProf = findAppProfile(m_selectedPath, cfg);
-            if (appProf) {
-                pushItemFunc(SubItemSpec{
-                    .action = SubAction::RunWithAppProfile,
-                    .title = i18n.tr("context_menu", "run_app_profile", L"使用此程序的专属配置运行"),
-                    .iconPath = lepIcon,
-                });
+            // 2. 动态感知目标程序是否已有专属配置（支持单程序多专属配置）
+            const auto appProfs = findAppProfiles(m_selectedPath, cfg);
+            if (appProfs && !appProfs->profiles.empty()) {
+                const bool multi = appProfs->profiles.size() > 1;
+                const std::wstring targetFileName = m_selectedPath.filename().wstring();
+                for (const auto& prof : appProfs->profiles) {
+                    const bool showNamed = multi || (!prof.name.empty() && !equalsIgnoreCaseW(prof.name, targetFileName));
+                    const std::wstring itemTitle = showNamed
+                        ? i18n.trFormat("context_menu", "run_app_profile_named", L"{name}", prof.name, L"用专属配置「" + prof.name + L"」运行")
+                        : i18n.tr("context_menu", "run_app_profile", L"使用此程序的专属配置运行");
+                    pushItemFunc(SubItemSpec{
+                        .action = SubAction::RunWithAppProfile,
+                        .title = itemTitle,
+                        .profileName = prof.name,
+                        .iconPath = lepIcon,
+                    });
+                }
                 pushItemFunc(SubItemSpec{
                     .action = SubAction::ManageAppProfile,
                     .title = i18n.tr("context_menu", "edit_app_profile", L"编辑此程序的专属配置..."),

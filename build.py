@@ -16,7 +16,7 @@ import zipfile
 
 
 kScriptRoot = Path(__file__).resolve().parent
-kVersion = "3.0.1"
+kVersion = "3.0.2"
 kZipRootName = "LocaleEmulatorPlus"
 kDefaultSdkRoot = Path(r"C:\Program Files (x86)\Windows Kits\10")
 kDefaultSdkVersion = "10.0.26100.0"

@@ -65,13 +65,16 @@ LocaleEmulatorPlus（LEP）是一款面向 Windows 的按应用区域、代码�
 # 使用指定全局配置启动程序（支持 -- 透传参数给目标）
 LEP.exe run --profile "日本语" "C:\Games\App.exe" -- --windowed
 
-# 按优先级运行（程序专属 .lep.toml / 全局回退配置 > 第一个全局配置）
+# 使用该程序指定名称的专属配置启动（支持单程序多专属配置）
+LEP.exe run --app-profile "窗口模式" "C:\Games\App.exe"
+
+# 按优先级运行（程序首个专属配置 > 第一个全局配置）
 LEP.exe run "C:\Games\App.exe"
 
-# 打开某程序的专属配置编辑窗口
+# 打开某程序的专属配置管理窗口
 LEP.exe manage "C:\Games\App.exe"
 
-# 创建指向 LEP 启动目标程序的 .lnk 快捷方式
+# 创建指向 LEP 启动目标程序的 .lnk 快捷方式（支持 --profile 或 --app-profile）
 LEP.exe shortcut "C:\Games\App.exe" --profile "日本语" --out "C:\Users\Me\Desktop\App.lnk"
 
 # 列出所有全局配置

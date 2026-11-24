@@ -101,7 +101,15 @@ public sealed partial class ProfilesPage : Page
             LoadSelectedToForm();
         }
 
-        var apps = _state.Config.AppProfiles.ToList();
+        var apps = _state.Config.AppProfiles
+            .GroupBy(e => SystemService.NormalizePathForMatch(e.TargetPath))
+            .Select(g => new GlobalAppSummary
+            {
+                TargetPath = g.First().TargetPath,
+                Count = g.Count(),
+                FirstLocale = g.First().Profile.Locale,
+            })
+            .ToList();
         GlobalAppsList.ItemsSource = apps;
         if (apps.Count > 0)
         {
@@ -289,7 +297,7 @@ public sealed partial class ProfilesPage : Page
         {
             ConfigService.SaveGlobalConfig(_state.ConfigPath, _state.Config);
             _state.NotifyConfigChanged();
-            ShowInfo(i18n.Tr("profiles", "saved_ok"), InfoBarSeverity.Success);
+            ShowInfo($"{i18n.Tr("profiles", "saved_ok")} (config.toml · {DateTime.Now:HH:mm:ss})", InfoBarSeverity.Success);
         }
         catch (Exception ex)
         {
@@ -299,7 +307,7 @@ public sealed partial class ProfilesPage : Page
 
     private void OpenSelectedGlobalApp()
     {
-        if (GlobalAppsList.SelectedItem is AppProfileEntry entry)
+        if (GlobalAppsList.SelectedItem is GlobalAppSummary entry)
         {
             _hostWindow?.OpenAppProfileWindow(entry.TargetPath);
         }
@@ -311,7 +319,7 @@ public sealed partial class ProfilesPage : Page
 
     private async void RemoveAppBtn_Click(object sender, RoutedEventArgs e)
     {
-        if (GlobalAppsList.SelectedItem is not AppProfileEntry entry) return;
+        if (GlobalAppsList.SelectedItem is not GlobalAppSummary entry) return;
         var i18n = _state.I18n;
         var dlg = new ContentDialog
         {

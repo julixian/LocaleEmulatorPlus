@@ -67,9 +67,27 @@ public sealed class AppProfileEntry
     public override string ToString() => DisplayLabel;
 }
 
+public sealed class GlobalAppSummary
+{
+    public required string TargetPath { get; init; }
+    public required int Count { get; init; }
+    public required string FirstLocale { get; init; }
+
+    public string DisplayLabel
+    {
+        get
+        {
+            string name = System.IO.Path.GetFileName(TargetPath);
+            return Count > 1 ? $"{name} ({Count})" : $"{name} ({FirstLocale})";
+        }
+    }
+
+    public override string ToString() => DisplayLabel;
+}
+
 public sealed class GlobalConfig
 {
-    public string Version { get; set; } = "3.0.1";
+    public string Version { get; set; } = "3.0.2";
     public string Language { get; set; } = "auto";
     public List<LepProfile> Profiles { get; set; } = new();
     public List<AppProfileEntry> AppProfiles { get; set; } = new();
@@ -78,6 +96,13 @@ public sealed class GlobalConfig
 public sealed class ResolvedAppProfile
 {
     public required LepProfile Profile { get; init; }
+    public required AppProfileStorage Storage { get; init; }
+    public string ConfigFilePath { get; init; } = "";
+}
+
+public sealed class ResolvedAppProfiles
+{
+    public required List<LepProfile> Profiles { get; init; }
     public required AppProfileStorage Storage { get; init; }
     public string ConfigFilePath { get; init; } = "";
 }
